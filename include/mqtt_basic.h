@@ -9,7 +9,50 @@
 
 #include <stdbool.h>
 
-#include "mqtt_types.h"
+#define MQTT_VERSION_3_1 3
+#define MQTT_VERSION_3_1_1 4
+#define MQTT_VERSION_5_0 5
+
+#define MQTT_PROTOCOL_NAME "MQTT"
+
+#define MQTT_MAX_MSG_LEN 268435455
+
+#define MQTT_MAX_LENGTH_BYTES 4
+#define MQTT_LENGTH_VALUE_MASK 0x7F
+#define MQTT_LENGTH_CONTINUATION_BIT 0x80
+#define MQTT_LENGTH_SHIFT 7
+
+/* Packet types */
+typedef enum mqtt_packet_type_t {
+    MQTT_CONNECT     = 0x01,
+    MQTT_CONNACK     = 0x02,
+    MQTT_PUBLISH     = 0x03,
+    MQTT_PUBACK      = 0x04,
+    MQTT_PUBREC      = 0x05,
+    MQTT_PUBREL      = 0x06,
+    MQTT_PUBCOMP     = 0x07,
+    MQTT_SUBSCRIBE   = 0x08,
+    MQTT_SUBACK      = 0x09,
+    MQTT_UNSUBSCRIBE = 0x0A,
+    MQTT_UNSUBACK    = 0x0B,
+    MQTT_PINGREQ     = 0x0C,
+    MQTT_PINGRESP    = 0x0D,
+    MQTT_DISCONNECT  = 0x0E,
+    MQTT_AUTH        = 0x0F
+} mqtt_packet_type;
+
+/* Quality of Service types. */
+#define MQTT_QOS_0_AT_MOST_ONCE 0
+#define MQTT_QOS_1_AT_LEAST_ONCE 1
+#define MQTT_QOS_2_EXACTLY_ONCE 2
+
+/* CONNACK codes */
+#define MQTT_CONNACK_ACCEPTED 0
+#define MQTT_CONNACK_REFUSED_PROTOCOL_VERSION 1
+#define MQTT_CONNACK_REFUSED_IDENTIFIER_REJECTED 2
+#define MQTT_CONNACK_REFUSED_SERVER_UNAVAILABLE 3
+#define MQTT_CONNACK_REFUSED_BAD_USERNAME_PASSWORD 4
+#define MQTT_CONNACK_REFUSED_NOT_AUTHORIZED 5
 
 /* Function return codes */
 #define MQTT_SUCCESS 0
@@ -22,14 +65,14 @@
 #define MQTT_ERR_MALFORMED 7
 
 struct pos_buf {
-    unsigned char *curpos;
-    unsigned char *endpos;
+    uint8_t *curpos;
+    uint8_t *endpos;
 };
 
 /* Compact string type */
 typedef struct {
-    uint32_t       length;
-    unsigned char *str;
+    uint32_t length;
+    uint8_t *str;
 } mqtt_str_t;
 
 /* CONNECT flags */
@@ -99,17 +142,17 @@ typedef struct mqtt_unsuback_vhdr_t {
  * Union to cover all Variable Header types
  ****************************************************************************/
 union mqtt_variable_header {
-    mqtt_connect_vhdr     connect_vh;
-    mqtt_connack_vhdr     connack_vh;
-    mqtt_publish_vhdr     publish_vh;
-    mqtt_puback_vhdr      puback_vh;
-    mqtt_pubrec_vhdr      pubrec_vh;
-    mqtt_pubrel_vhdr      pubrel_vh;
-    mqtt_pubcomp_vhdr     pubcomp_vh;
-    mqtt_subscribe_vhdr   subscribe_vh;
-    mqtt_suback_vhdr      suback_vh;
-    mqtt_unsubscribe_vhdr unsubscribe_vh;
-    mqtt_unsuback_vhdr    unsuback_vh;
+    mqtt_connect_vhdr     connect;
+    mqtt_connack_vhdr     connack;
+    mqtt_publish_vhdr     publish;
+    mqtt_puback_vhdr      puback;
+    mqtt_pubrec_vhdr      pubrec;
+    mqtt_pubrel_vhdr      pubrel;
+    mqtt_pubcomp_vhdr     pubcomp;
+    mqtt_subscribe_vhdr   subscribe;
+    mqtt_suback_vhdr      suback;
+    mqtt_unsubscribe_vhdr unsubscribe;
+    mqtt_unsuback_vhdr    unsuback;
 };
 
 typedef struct {
@@ -133,17 +176,18 @@ typedef struct {
 } mqtt_publish_payload;
 
 typedef struct {
-    mqtt_topic *topics; /* array of mqtt_topic instances continuous in memory */
-    uint32_t    topic_count; /* not included in the message itself */
+    mqtt_topic
+        *    topic_arr; /* array of mqtt_topic instances continuous in memory */
+    uint32_t topic_count; /* not included in the message itself */
 } mqtt_subscribe_payload;
 
 typedef struct {
-    uint8_t *return_codes;  /* array of return codes continuous in memory */
-    uint32_t retcode_count; /* not included in the message itself */
+    uint8_t *ret_code_arr;   /* array of return codes continuous in memory */
+    uint32_t ret_code_count; /* not included in the message itself */
 } mqtt_suback_payload;
 
 typedef struct {
-    mqtt_str_t *topics;      /* array of topics continuous in memory */
+    mqtt_str_t *topic_arr;   /* array of topic_arr continuous in memory */
     uint32_t    topic_count; /* not included in the message itself */
 } mqtt_unsubscribe_payload;
 
@@ -176,23 +220,24 @@ typedef struct {
 typedef struct {
     union {
         mqtt_common_hdr common;
-        mqtt_pub_hdr    pub;
+        mqtt_pub_hdr    publish;
     };
+
+    uint32_t remaining_length; /* up to 268,435,455 (256 MB) */
 } mqtt_fixed_hdr;
 
 typedef struct {
     /* Fixed header part */
-    mqtt_fixed_hdr fixed_hdr;
+    mqtt_fixed_hdr fixed_header;
 
-    uint32_t remaining_length; /* up to 268,435,455 (256 MB) */
-    uint8_t  used_bytes; /* byte count for used remainingLength representation
-                              This information (combined with packetType and
-                              packetFlags)  may be used to jump the point where
-                              the actual data starts */
+    uint8_t used_bytes; /* byte count for used remainingLength representation
+                             This information (combined with packetType and
+                             packetFlags)  may be used to jump the point where
+                             the actual data starts */
     union mqtt_variable_header var_header;
     union mqtt_payload         payload;
 
-    bool       is_parser;      /* message is obtained from parsing or built */
+    bool       is_decoded;     /* message is obtained from decoded or encoded */
     mqtt_str_t entire_raw_msg; /* raw representation of whole packet */
     int        attached_raw;   /* indicates if entire_raw_msg is to be owned */
 } mqtt_msg;
