@@ -91,7 +91,7 @@ typedef struct conn_flags_t {
  ****************************************************************************/
 typedef struct mqtt_connect_vhdr_t {
     mqtt_str_t protocol_name;
-    uint8_t    protocol_level;
+    uint8_t    protocol_version;
     conn_flags conn_flags;
     uint16_t   keep_alive;
 } mqtt_connect_vhdr;
