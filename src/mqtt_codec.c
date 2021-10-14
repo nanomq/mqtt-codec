@@ -1967,9 +1967,9 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_str_t *buf, bool print_bytes)
         }
         pos += ret;
         for (i = 0; i < msg->entire_raw_msg.length; i++) {
-            if ((i % 16) == 0) {
-                buf->str[pos++] = '\n';
-            }
+            // if ((i % 16) == 0) {
+            //     buf->str[pos++] = '\n';
+            // }
             ret = sprintf((char *) &buf->str[pos], "%02x ",
                           ((uint8_t)(msg->entire_raw_msg.str[i] & 0xff)));
             if ((ret < 0) || ((pos + ret) > buf->length)) {

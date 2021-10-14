@@ -16,7 +16,7 @@
 void decode_test(void)
 {
     uint8_t    buffer[BUFFSIZE];
-    mqtt_str_t buff; // = {&buffer[0], (uint32_t)BUFFSIZE};
+    mqtt_str_t buff;
     buff.str    = &buffer[0];
     buff.length = BUFFSIZE;
 
@@ -374,6 +374,31 @@ void encode_test(void)
     }
     mqtt_msg_destroy(connack);
 
+    /* PUBLISH */
+    mqtt_msg *pubmsg                          = mqtt_msg_create_empty();
+    pubmsg->fixed_header.publish.packet_type  = MQTT_PUBLISH;
+    pubmsg->fixed_header.publish.dup          = 0;
+    pubmsg->fixed_header.publish.qos          = 2;
+    pubmsg->fixed_header.publish.retain       = 0;
+    pubmsg->var_header.publish.packet_id      = 876;
+    pubmsg->var_header.publish.topic_name.str = (uint8_t *) "/nanomq/mqtt/msg";
+    pubmsg->var_header.publish.topic_name.length =
+        strlen((char *) pubmsg->var_header.publish.topic_name.str);
+    pubmsg->payload.publish.payload.str =
+        (uint8_t *) "{\"broker\" : \"/nanomq\",\"sdk\" : \"mqtt-codec\"}";
+    pubmsg->payload.publish.payload.length =
+        strlen((char *) pubmsg->payload.publish.payload.str);
+
+    ret = mqtt_msg_encode(pubmsg);
+    if (ret == 0) {
+        memset(buff.str, 0, buff.length);
+        mqtt_msg_dump(pubmsg, &buff, 1);
+        printf("%s", buff.str);
+    } else {
+        printf("Problem on building pubmsg example : %d\n", ret);
+    }
+    mqtt_msg_destroy(pubmsg);
+
     /* PUBREL */
     mqtt_msg *pubrel                        = mqtt_msg_create_empty();
     pubrel->fixed_header.common.packet_type = MQTT_PUBREL;
@@ -483,31 +508,6 @@ void encode_test(void)
     /* deallocate return-codes array */
     free(suback->payload.suback.ret_code_arr);
     mqtt_msg_destroy(suback);
-
-    /* PUBLISH */
-    mqtt_msg *pubmsg                          = mqtt_msg_create_empty();
-    pubmsg->fixed_header.publish.packet_type  = MQTT_PUBLISH;
-    pubmsg->fixed_header.publish.dup          = 0;
-    pubmsg->fixed_header.publish.qos          = 2;
-    pubmsg->fixed_header.publish.retain       = 0;
-    pubmsg->var_header.publish.packet_id      = 876;
-    pubmsg->var_header.publish.topic_name.str = (uint8_t *) "/nanomq/mqtt/msg";
-    pubmsg->var_header.publish.topic_name.length =
-        strlen((char *) pubmsg->var_header.publish.topic_name.str);
-    pubmsg->payload.publish.payload.str =
-        (uint8_t *) "{\"broker\" : \"/nanomq\",\"sdk\" : \"mqtt-codec\"}";
-    pubmsg->payload.publish.payload.length =
-        strlen((char *) pubmsg->payload.publish.payload.str);
-
-    ret = mqtt_msg_encode(pubmsg);
-    if (ret == 0) {
-        memset(buff.str, 0, buff.length);
-        mqtt_msg_dump(pubmsg, &buff, 1);
-        printf("%s", buff.str);
-    } else {
-        printf("Problem on building pubmsg example : %d\n", ret);
-    }
-    mqtt_msg_destroy(pubmsg);
 
     /* UNSUBSCRIBE */
     mqtt_msg *unsubscribe                         = mqtt_msg_create_empty();
@@ -631,7 +631,7 @@ int main(int argc, char *argv[])
 {
     decode_test();
 
-    // encode_test();
+    encode_test();
 
     // test_for_mqtt_codec_encode();
 
