@@ -181,20 +181,23 @@ int encode_connect_msg(mqtt_msg *msg)
     buf.curpos = &msg->entire_raw_msg.str[0];
     buf.endpos = &msg->entire_raw_msg.str[msg->entire_raw_msg.length];
 
-    write_byte(MQTT_CONNECT, &buf);
+    msg->fixed_header.common.packet_type = MQTT_CONNECT;
+
+    write_byte(*(uint8_t *) &msg->fixed_header.common, &buf);
 
     /* Remaining Length */
     msg->used_bytes = write_variable_length_value(poslength, &buf);
 
     /* Protocol Name */
     if (var_header->protocol_name.length == 0) {
-        var_header->protocol_name.str    = (uint8_t *) "MQTT";
-        var_header->protocol_name.length = 4;
+        var_header->protocol_name.str = (uint8_t *) "MQTT";
+        var_header->protocol_name.length =
+            strlen((char *) var_header->protocol_name.str);
     }
     write_byte_string(&var_header->protocol_name, &buf);
 
     /* Protocol Level/Version */
-    write_byte(var_header->protocol_level, &buf);
+    write_byte(var_header->protocol_version, &buf);
 
     /* Connect Flags */
     write_byte(*(uint8_t *) &var_header->conn_flags, &buf);
@@ -280,7 +283,9 @@ int encode_connack_msg(mqtt_msg *msg)
     buf.curpos = &msg->entire_raw_msg.str[0];
     buf.endpos = &msg->entire_raw_msg.str[msg->entire_raw_msg.length];
 
-    write_byte(MQTT_CONNACK, &buf);
+    msg->fixed_header.common.packet_type = MQTT_CONNACK;
+
+    write_byte(*(uint8_t *) &msg->fixed_header.common, &buf);
 
     /* Remaining Length */
     msg->used_bytes = write_variable_length_value(poslength, &buf);
@@ -968,8 +973,7 @@ mqtt_msg *decode_raw_packet_connect_msg(uint8_t *packet, uint32_t length,
                                         uint32_t *parse_error, int attached_raw)
 {
     *parse_error = MQTT_SUCCESS;
-    int        ret;
-    conn_flags connflags = { 0 };
+    int ret;
 
     mqtt_msg *msg = mqtt_msg_create_empty();
 
@@ -994,7 +998,7 @@ mqtt_msg *decode_raw_packet_connect_msg(uint8_t *packet, uint32_t length,
         goto ERROR;
     }
     /* Protocol Level */
-    ret = read_byte(&buf, &msg->var_header.connect.protocol_level);
+    ret = read_byte(&buf, &msg->var_header.connect.protocol_version);
     if (ret != 0) {
         *parse_error = MQTT_ERR_PROTOCOL;
         goto ERROR;
@@ -1018,7 +1022,7 @@ mqtt_msg *decode_raw_packet_connect_msg(uint8_t *packet, uint32_t length,
         *parse_error = MQTT_ERR_PROTOCOL;
         goto ERROR;
     }
-    if (connflags.will_flag) {
+    if (msg->var_header.connect.conn_flags.will_flag) {
         /* Will Topic */
         ret = read_utf8_str(&buf, &msg->payload.connect.will_topic);
         if (ret != 0) {
@@ -1032,7 +1036,7 @@ mqtt_msg *decode_raw_packet_connect_msg(uint8_t *packet, uint32_t length,
             goto ERROR;
         }
     }
-    if (connflags.username_flag) {
+    if (msg->var_header.connect.conn_flags.username_flag) {
         /* Will Topic */
         ret = read_utf8_str(&buf, &msg->payload.connect.user_name);
         if (ret != 0) {
@@ -1040,7 +1044,7 @@ mqtt_msg *decode_raw_packet_connect_msg(uint8_t *packet, uint32_t length,
             goto ERROR;
         }
     }
-    if (connflags.password_flag) {
+    if (msg->var_header.connect.conn_flags.password_flag) {
         /* Will Topic */
         ret = read_str_data(&buf, &msg->payload.connect.password);
         if (ret != 0) {
@@ -1739,7 +1743,7 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_str_t *buf, bool print_bytes)
                       "Keep Alive      :   %d\n",
                       msg->var_header.connect.protocol_name.length,
                       msg->var_header.connect.protocol_name.str,
-                      (int) msg->var_header.connect.protocol_level,
+                      (int) msg->var_header.connect.protocol_version,
                       (int) msg->var_header.connect.keep_alive);
         if ((ret < 0) || ((pos + ret) > buf->length)) {
             return 1;
