@@ -248,4 +248,10 @@ extern int write_byte(uint8_t val, struct pos_buf *buf);
 extern int write_uint16(uint16_t value, struct pos_buf *buf);
 extern int write_byte_string(mqtt_str_t *str, struct pos_buf *buf);
 
+extern int read_byte(struct pos_buf *buf, uint8_t *val);
+extern int read_uint16(struct pos_buf *buf, uint16_t *val);
+extern int read_utf8_str(struct pos_buf *buf, mqtt_str_t *val);
+extern int read_str_data(struct pos_buf *buf, mqtt_str_t *val);
+extern int read_packet_length(struct pos_buf *buf, uint32_t *length);
+
 #endif

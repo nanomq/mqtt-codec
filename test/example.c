@@ -312,20 +312,12 @@ void encode_test(void)
     buff.length = BUFFSIZE;
 
     /* CONNECT */
-    mqtt_msg *connmsg                                = mqtt_msg_create_empty();
-    connmsg->fixed_header.common.packet_type         = MQTT_CONNECT;
+    mqtt_msg *connmsg = mqtt_msg_create(MQTT_CONNECT);
     connmsg->var_header.connect.protocol_name.str    = (uint8_t *) "MQTT";
     connmsg->var_header.connect.protocol_name.length = 4;
     connmsg->var_header.connect.protocol_version =
         MQTT_VERSION_3_1_1; // MQTT_VERSION_3_1_1;
     connmsg->var_header.connect.keep_alive = 60;
-
-    conn_flags connflags = { .clean_session = 1,
-                             .will_retain   = 0,
-                             .will_qos      = 0,
-                             .will_flag     = 1,
-                             .username_flag = 1,
-                             .password_flag = 1 };
 
     connmsg->payload.connect.will_topic.str = (uint8_t *) "will_topic";
     connmsg->payload.connect.will_topic.length =
@@ -342,8 +334,12 @@ void encode_test(void)
     connmsg->payload.connect.password.length =
         strlen((char *) connmsg->payload.connect.password.str);
 
-    memcpy((uint8_t *) &connmsg->var_header.connect.conn_flags,
-           (uint8_t *) &connflags, 1);
+    connmsg->var_header.connect.conn_flags.clean_session = 1;
+    connmsg->var_header.connect.conn_flags.will_retain   = 0;
+    connmsg->var_header.connect.conn_flags.will_qos      = 0;
+    connmsg->var_header.connect.conn_flags.will_flag     = 1;
+    connmsg->var_header.connect.conn_flags.username_flag = 1;
+    connmsg->var_header.connect.conn_flags.password_flag = 1;
 
     connmsg->payload.connect.client_id.str = (uint8_t *) "Test-Client1";
     connmsg->payload.connect.client_id.length =
@@ -360,8 +356,7 @@ void encode_test(void)
     mqtt_msg_destroy(connmsg);
 
     /* CONNACK */
-    mqtt_msg *connack                            = mqtt_msg_create_empty();
-    connack->fixed_header.common.packet_type     = MQTT_CONNACK;
+    mqtt_msg *connack = mqtt_msg_create(MQTT_CONNACK);
     connack->var_header.connack.conn_return_code = 4;
     connack->var_header.connack.connack_flags |= 1;
     ret = mqtt_msg_encode(connack);
@@ -375,8 +370,7 @@ void encode_test(void)
     mqtt_msg_destroy(connack);
 
     /* PUBLISH */
-    mqtt_msg *pubmsg                          = mqtt_msg_create_empty();
-    pubmsg->fixed_header.publish.packet_type  = MQTT_PUBLISH;
+    mqtt_msg *pubmsg                          = mqtt_msg_create(MQTT_PUBLISH);
     pubmsg->fixed_header.publish.dup          = 0;
     pubmsg->fixed_header.publish.qos          = 2;
     pubmsg->fixed_header.publish.retain       = 0;
@@ -400,10 +394,9 @@ void encode_test(void)
     mqtt_msg_destroy(pubmsg);
 
     /* PUBREL */
-    mqtt_msg *pubrel                        = mqtt_msg_create_empty();
-    pubrel->fixed_header.common.packet_type = MQTT_PUBREL;
-    pubrel->var_header.pubrel.packet_id     = 1;
-    ret                                     = mqtt_msg_encode(pubrel);
+    mqtt_msg *pubrel                    = mqtt_msg_create(MQTT_PUBREL);
+    pubrel->var_header.pubrel.packet_id = 1;
+    ret                                 = mqtt_msg_encode(pubrel);
     if (ret == 0) {
         memset(buff.str, 0, buff.length);
         mqtt_msg_dump(pubrel, &buff, 1);
@@ -414,10 +407,9 @@ void encode_test(void)
     mqtt_msg_destroy(pubrel);
 
     /* PUBACK */
-    mqtt_msg *puback                        = mqtt_msg_create_empty();
-    puback->fixed_header.common.packet_type = MQTT_PUBACK;
-    puback->var_header.puback.packet_id     = 2;
-    ret                                     = mqtt_msg_encode(puback);
+    mqtt_msg *puback                    = mqtt_msg_create(MQTT_PUBACK);
+    puback->var_header.puback.packet_id = 2;
+    ret                                 = mqtt_msg_encode(puback);
     if (ret == 0) {
         memset(buff.str, 0, buff.length);
         mqtt_msg_dump(puback, &buff, 1);
@@ -427,10 +419,9 @@ void encode_test(void)
     }
     mqtt_msg_destroy(puback);
 
-    mqtt_msg *pubrec                        = mqtt_msg_create_empty();
-    pubrec->fixed_header.common.packet_type = MQTT_PUBREC;
-    pubrec->var_header.pubrec.packet_id     = 3;
-    ret                                     = mqtt_msg_encode(pubrec);
+    mqtt_msg *pubrec                    = mqtt_msg_create(MQTT_PUBREC);
+    pubrec->var_header.pubrec.packet_id = 3;
+    ret                                 = mqtt_msg_encode(pubrec);
     if (ret == 0) {
         memset(buff.str, 0, buff.length);
         mqtt_msg_dump(pubrec, &buff, 1);
@@ -441,10 +432,9 @@ void encode_test(void)
     mqtt_msg_destroy(pubrec);
 
     /* PUBCOMP */
-    mqtt_msg *pubcomp                        = mqtt_msg_create_empty();
-    pubcomp->fixed_header.common.packet_type = MQTT_PUBCOMP;
-    pubcomp->var_header.pubcomp.packet_id    = 3;
-    ret                                      = mqtt_msg_encode(pubcomp);
+    mqtt_msg *pubcomp                     = mqtt_msg_create(MQTT_PUBCOMP);
+    pubcomp->var_header.pubcomp.packet_id = 3;
+    ret                                   = mqtt_msg_encode(pubcomp);
     if (ret == 0) {
         memset(buff.str, 0, buff.length);
         mqtt_msg_dump(pubcomp, &buff, 1);
@@ -455,8 +445,7 @@ void encode_test(void)
     mqtt_msg_destroy(pubcomp);
 
     /* SUBSCRIBE */
-    mqtt_msg *submsg                        = mqtt_msg_create_empty();
-    submsg->fixed_header.common.packet_type = MQTT_SUBSCRIBE;
+    mqtt_msg *submsg = mqtt_msg_create(MQTT_SUBSCRIBE);
 
     mqtt_topic topic_arr[3];
     topic_arr[0].topic_filter.str = (uint8_t *) "sub/mqtt/1";
@@ -487,9 +476,8 @@ void encode_test(void)
     mqtt_msg_destroy(submsg);
 
     /* SUBACK */
-    mqtt_msg *suback                        = mqtt_msg_create_empty();
-    suback->fixed_header.common.packet_type = MQTT_SUBACK;
-    suback->payload.suback.ret_code_count   = 3;
+    mqtt_msg *suback                      = mqtt_msg_create(MQTT_SUBACK);
+    suback->payload.suback.ret_code_count = 3;
 
     suback->payload.suback.ret_code_arr =
         malloc(suback->payload.suback.ret_code_count * sizeof(uint8_t));
@@ -510,8 +498,7 @@ void encode_test(void)
     mqtt_msg_destroy(suback);
 
     /* UNSUBSCRIBE */
-    mqtt_msg *unsubscribe                         = mqtt_msg_create_empty();
-    unsubscribe->fixed_header.common.packet_type  = MQTT_UNSUBSCRIBE;
+    mqtt_msg *unsubscribe = mqtt_msg_create(MQTT_UNSUBSCRIBE);
     unsubscribe->var_header.unsubscribe.packet_id = 46;
 
     mqtt_str_t untopics[2];
@@ -533,10 +520,9 @@ void encode_test(void)
     mqtt_msg_destroy(unsubscribe);
 
     /* UNSUBACK */
-    mqtt_msg *unsuback                        = mqtt_msg_create_empty();
-    unsuback->fixed_header.common.packet_type = MQTT_UNSUBACK;
-    unsuback->var_header.unsuback.packet_id   = 46;
-    ret                                       = mqtt_msg_encode(unsuback);
+    mqtt_msg *unsuback                      = mqtt_msg_create(MQTT_UNSUBACK);
+    unsuback->var_header.unsuback.packet_id = 46;
+    ret                                     = mqtt_msg_encode(unsuback);
     if (ret == 0) {
         memset(buff.str, 0, buff.length);
         mqtt_msg_dump(unsuback, &buff, 1);
@@ -547,9 +533,8 @@ void encode_test(void)
     mqtt_msg_destroy(unsuback);
 
     /* PINGREQ */
-    mqtt_msg *pingreq                        = mqtt_msg_create_empty();
-    pingreq->fixed_header.common.packet_type = MQTT_PINGREQ;
-    ret                                      = mqtt_msg_encode(pingreq);
+    mqtt_msg *pingreq = mqtt_msg_create(MQTT_PINGREQ);
+    ret               = mqtt_msg_encode(pingreq);
     if (ret == 0) {
         memset(buff.str, 0, buff.length);
         mqtt_msg_dump(pingreq, &buff, 1);
@@ -560,9 +545,8 @@ void encode_test(void)
     mqtt_msg_destroy(pingreq);
 
     /* PINGRESP */
-    mqtt_msg *pingresp                        = mqtt_msg_create_empty();
-    pingresp->fixed_header.common.packet_type = MQTT_PINGRESP;
-    ret                                       = mqtt_msg_encode(pingresp);
+    mqtt_msg *pingresp = mqtt_msg_create(MQTT_PINGRESP);
+    ret                = mqtt_msg_encode(pingresp);
     if (ret == 0) {
         memset(buff.str, 0, buff.length);
         mqtt_msg_dump(pingresp, &buff, 1);
@@ -573,9 +557,8 @@ void encode_test(void)
     mqtt_msg_destroy(pingresp);
 
     /* DISCONNECT */
-    mqtt_msg *disconn                        = mqtt_msg_create_empty();
-    disconn->fixed_header.common.packet_type = MQTT_DISCONNECT;
-    ret                                      = mqtt_msg_encode(disconn);
+    mqtt_msg *disconn = mqtt_msg_create(MQTT_DISCONNECT);
+    ret               = mqtt_msg_encode(disconn);
     if (ret == 0) {
         memset(buff.str, 0, buff.length);
         mqtt_msg_dump(disconn, &buff, 1);
@@ -598,14 +581,12 @@ void test_for_mqtt_codec_encode(void)
     char *payload    = strdup("{\"name\" : \"/nanomq\",\"seq\" : 1}");
 
     /* PUBLISH */
-    mqtt_msg *pubmsg                         = mqtt_msg_create_empty();
-    pubmsg->fixed_header.publish.packet_type = MQTT_PUBLISH;
-    pubmsg->fixed_header.publish.dup         = 0;
-    pubmsg->fixed_header.publish.qos         = 0;
-    pubmsg->fixed_header.publish.retain      = 0;
-
-    pubmsg->var_header.publish.packet_id         = 876;
-    pubmsg->var_header.publish.topic_name.str    = (uint8_t *) topic_name;
+    mqtt_msg *pubmsg                          = mqtt_msg_create(MQTT_PUBLISH);
+    pubmsg->fixed_header.publish.dup          = 0;
+    pubmsg->fixed_header.publish.qos          = 0;
+    pubmsg->fixed_header.publish.retain       = 0;
+    pubmsg->var_header.publish.packet_id      = 876;
+    pubmsg->var_header.publish.topic_name.str = (uint8_t *) topic_name;
     pubmsg->var_header.publish.topic_name.length = strlen(topic_name);
     pubmsg->payload.publish.payload.str          = (uint8_t *) payload;
     pubmsg->payload.publish.payload.length       = strlen(payload);

@@ -6,10 +6,18 @@
 #include <stdlib.h>
 #include <string.h>
 
-mqtt_msg *mqtt_msg_create_empty(void)
+static mqtt_msg *mqtt_msg_create_empty(void)
 {
     mqtt_msg *msg = (mqtt_msg *) malloc(sizeof(mqtt_msg));
     memset((char *) msg, 0, sizeof(mqtt_msg));
+
+    return msg;
+}
+
+mqtt_msg *mqtt_msg_create(mqtt_packet_type packet_type)
+{
+    mqtt_msg *msg                        = mqtt_msg_create_empty();
+    msg->fixed_header.common.packet_type = packet_type;
 
     return msg;
 }
@@ -791,99 +799,6 @@ int mqtt_msg_encode(mqtt_msg *msg)
 /*****************************************************************************
  *    Parser Part
  *****************************************************************************/
-int read_byte(struct pos_buf *buf, uint8_t *val)
-{
-    if ((buf->endpos - buf->curpos) < 1) {
-        return MQTT_ERR_NOMEM;
-    }
-
-    *val = *(buf->curpos++);
-
-    return 0;
-}
-
-int read_uint16(struct pos_buf *buf, uint16_t *val)
-{
-    if ((size_t) (buf->endpos - buf->curpos) < sizeof(uint16_t)) {
-        return MQTT_ERR_INVAL;
-    }
-
-    *val = *(buf->curpos++) << 8; /* MSB */
-    *val |= *(buf->curpos++);     /* LSB */
-
-    return 0;
-}
-
-int read_utf8_str(struct pos_buf *buf, mqtt_str_t *val)
-{
-    uint16_t length = 0;
-    int      ret    = read_uint16(buf, &length);
-    if (ret != 0) {
-        return ret;
-    }
-    if ((buf->endpos - buf->curpos) < length) {
-        return MQTT_ERR_INVAL;
-    }
-
-    val->length = length;
-    /* Zero length UTF8 strings are permitted. */
-    if (length > 0) {
-        val->str = buf->curpos;
-        buf->curpos += length;
-    } else {
-        val->str = NULL;
-    }
-    return 0;
-}
-
-int read_str_data(struct pos_buf *buf, mqtt_str_t *val)
-{
-    uint16_t length = 0;
-    int      ret    = read_uint16(buf, &length);
-    if (ret != 0) {
-        return ret;
-    }
-    if ((buf->endpos - buf->curpos) < length) {
-        return MQTT_ERR_INVAL;
-    }
-
-    val->length = length;
-    if (length > 0) {
-        val->str = buf->curpos;
-        buf->curpos += length;
-    } else {
-        val->str = NULL;
-    }
-    return 0;
-}
-
-int read_packet_length(struct pos_buf *buf, uint32_t *length)
-{
-    uint8_t  shift = 0;
-    uint32_t bytes = 0;
-
-    *length = 0;
-    do {
-        if (bytes >= MQTT_MAX_MSG_LEN) {
-            return MQTT_ERR_INVAL;
-        }
-
-        if (buf->curpos >= buf->endpos) {
-            return MQTT_ERR_MALFORMED;
-        }
-
-        *length += ((uint32_t) * (buf->curpos) & MQTT_LENGTH_VALUE_MASK)
-            << shift;
-        shift += MQTT_LENGTH_SHIFT;
-        bytes++;
-    } while ((*(buf->curpos++) & MQTT_LENGTH_CONTINUATION_BIT) != 0U);
-
-    if (*length > MQTT_MAX_MSG_LEN) {
-        return MQTT_ERR_INVAL;
-    }
-
-    return 0;
-}
 
 /* A public utility function providing integer values encoded as variable-int
  * form, such as remaining-length value in the header of MQTT message. '*value'
@@ -1723,7 +1638,6 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_str_t *buf, bool print_bytes)
                 "Packet Type        :   %d (%s)\n"
                 "Packet Flags       :   |%d|%d|%d|%d|\n"
                 "Remaining Length   :   %d\n",
-
                 msg->fixed_header.common.packet_type,
                 get_packet_type_str(msg->fixed_header.common.packet_type),
                 msg->fixed_header.common.bit_3, msg->fixed_header.common.bit_2,
@@ -1762,7 +1676,7 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_str_t *buf, bool print_bytes)
                       ((flags_set.clean_session) ? "true" : "false"),
                       ((flags_set.will_flag) ? "true" : "false"),
                       ((flags_set.will_retain) ? "true" : "false"),
-                      (int) flags_set.will_qos,
+                      flags_set.will_qos,
                       ((flags_set.username_flag) ? "true" : "false"),
                       ((flags_set.password_flag) ? "true" : "false"));
         if ((ret < 0) || ((pos + ret) > buf->length)) {

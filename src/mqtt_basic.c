@@ -77,3 +77,97 @@ int write_byte_string(mqtt_str_t *str, struct pos_buf *buf)
 
     return 0;
 }
+
+int read_byte(struct pos_buf *buf, uint8_t *val)
+{
+    if ((buf->endpos - buf->curpos) < 1) {
+        return MQTT_ERR_NOMEM;
+    }
+
+    *val = *(buf->curpos++);
+
+    return 0;
+}
+
+int read_uint16(struct pos_buf *buf, uint16_t *val)
+{
+    if ((size_t) (buf->endpos - buf->curpos) < sizeof(uint16_t)) {
+        return MQTT_ERR_INVAL;
+    }
+
+    *val = *(buf->curpos++) << 8; /* MSB */
+    *val |= *(buf->curpos++);     /* LSB */
+
+    return 0;
+}
+
+int read_utf8_str(struct pos_buf *buf, mqtt_str_t *val)
+{
+    uint16_t length = 0;
+    int      ret    = read_uint16(buf, &length);
+    if (ret != 0) {
+        return ret;
+    }
+    if ((buf->endpos - buf->curpos) < length) {
+        return MQTT_ERR_INVAL;
+    }
+
+    val->length = length;
+    /* Zero length UTF8 strings are permitted. */
+    if (length > 0) {
+        val->str = buf->curpos;
+        buf->curpos += length;
+    } else {
+        val->str = NULL;
+    }
+    return 0;
+}
+
+int read_str_data(struct pos_buf *buf, mqtt_str_t *val)
+{
+    uint16_t length = 0;
+    int      ret    = read_uint16(buf, &length);
+    if (ret != 0) {
+        return ret;
+    }
+    if ((buf->endpos - buf->curpos) < length) {
+        return MQTT_ERR_INVAL;
+    }
+
+    val->length = length;
+    if (length > 0) {
+        val->str = buf->curpos;
+        buf->curpos += length;
+    } else {
+        val->str = NULL;
+    }
+    return 0;
+}
+
+int read_packet_length(struct pos_buf *buf, uint32_t *length)
+{
+    uint8_t  shift = 0;
+    uint32_t bytes = 0;
+
+    *length = 0;
+    do {
+        if (bytes >= MQTT_MAX_MSG_LEN) {
+            return MQTT_ERR_INVAL;
+        }
+
+        if (buf->curpos >= buf->endpos) {
+            return MQTT_ERR_MALFORMED;
+        }
+
+        *length += ((uint32_t) * (buf->curpos) & MQTT_LENGTH_VALUE_MASK)
+            << shift;
+        shift += MQTT_LENGTH_SHIFT;
+        bytes++;
+    } while ((*(buf->curpos++) & MQTT_LENGTH_CONTINUATION_BIT) != 0U);
+
+    if (*length > MQTT_MAX_MSG_LEN) {
+        return MQTT_ERR_INVAL;
+    }
+
+    return 0;
+}
