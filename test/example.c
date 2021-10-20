@@ -36,6 +36,18 @@ void dup_test(void)
     pubmsg->payload.publish.payload.length       = strlen(payload);
 
     ret = mqtt_msg_encode(pubmsg);
+
+    mqtt_msg_dump(pubmsg, &buff, 1);
+    printf("%s", buff.buf);
+    memset(buff.buf, 0, BUFFSIZE);
+    mqtt_msg *dup_msg;
+
+    int dup = mqtt_msg_dup(&dup_msg, pubmsg);
+    printf("dup result: %d\n", dup);
+    mqtt_msg_destroy(pubmsg);
+    mqtt_msg_dump(dup_msg, &buff, 1);
+    printf("%s", buff.buf);
+
     if (ret == 0) {
         /* free allocated texts to verify that now built message uses inner raw
          * data */
@@ -44,19 +56,12 @@ void dup_test(void)
         free(payload);
         payload = NULL;
         memset(buff.buf, 0, buff.length);
-        mqtt_msg_dump(pubmsg, &buff, 1);
-        printf("%s", buff.buf);
+        // mqtt_msg_dump(pubmsg, &buff, 1);
+        // printf("%s", buff.buf);
     } else {
         printf("Problem on building pubmsg example : %d\n", ret);
     }
-    mqtt_msg_dump(pubmsg, &buff, 1);
-    memset(buff.buf, 0, BUFFSIZE);
-    mqtt_msg *dup_msg;
 
-    mqtt_msg_dup(&dup_msg, pubmsg);
-    mqtt_msg_dump(dup_msg, &buff, 1);
-
-    mqtt_msg_destroy(pubmsg);
     mqtt_msg_destroy(dup_msg);
 }
 
@@ -657,12 +662,13 @@ void test_for_mqtt_codec_encode(void)
 
 int main(int argc, char *argv[])
 {
-    // decode_test();
+    decode_test();
 
-    // encode_test();
+    encode_test();
+
+    dup_test();
 
     // test_for_mqtt_codec_encode();
-    dup_test();
 
     return 0;
 }

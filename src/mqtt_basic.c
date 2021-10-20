@@ -91,7 +91,7 @@ int read_byte(struct pos_buf *buf, uint8_t *val)
 
 int read_uint16(struct pos_buf *buf, uint16_t *val)
 {
-    if ((size_t) (buf->endpos - buf->curpos) < sizeof(uint16_t)) {
+    if ((size_t)(buf->endpos - buf->curpos) < sizeof(uint16_t)) {
         return MQTT_ERR_INVAL;
     }
 
@@ -170,4 +170,19 @@ int read_packet_length(struct pos_buf *buf, uint32_t *length)
     }
 
     return 0;
+}
+
+mqtt_buf_t mqtt_buf_dup(const mqtt_buf_t *src)
+{
+    mqtt_buf_t dest;
+
+    dest.length = src->length;
+    dest.buf    = malloc(dest.length);
+    memcpy(dest.buf, src->buf, dest.length);
+    return dest;
+}
+
+void mqtt_buf_free(mqtt_buf_t *buf)
+{
+    free(buf->buf);
 }
