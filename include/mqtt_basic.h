@@ -254,4 +254,7 @@ extern int read_utf8_str(struct pos_buf *buf, mqtt_buf_t *val);
 extern int read_str_data(struct pos_buf *buf, mqtt_buf_t *val);
 extern int read_packet_length(struct pos_buf *buf, uint32_t *length);
 
+extern mqtt_buf_t mqtt_buf_dup(const mqtt_buf_t *src);
+extern void       mqtt_buf_free(mqtt_buf_t *buf);
+
 #endif
