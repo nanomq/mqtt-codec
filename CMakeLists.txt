@@ -10,8 +10,13 @@ default option for EXAMPLE" OFF)
 
 if(DEBUG)
   set(CMAKE_BUILD_TYPE "Debug")
-  set(CMAKE_C_FLAGS
+  if(APPLE)
+    set(CMAKE_C_FLAGS
+      "${CMAKE_C_FLAGS} -Wall -g -fsanitize=address")
+  else()
+    set(CMAKE_C_FLAGS
       "${CMAKE_C_FLAGS} -Wall -g -fsanitize=address -fsanitize=leak")
+  endif()
   add_definitions(-DDEBUG)
 endif(DEBUG)
 

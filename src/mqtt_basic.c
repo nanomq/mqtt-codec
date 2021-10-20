@@ -63,15 +63,15 @@ int write_uint16(uint16_t value, struct pos_buf *buf)
     return 0;
 }
 
-int write_byte_string(mqtt_str_t *str, struct pos_buf *buf)
+int write_byte_string(mqtt_buf_t *str, struct pos_buf *buf)
 {
     if ((buf->endpos - buf->curpos) < (str->length + 2)) {
         return MQTT_ERR_NOMEM;
     }
     write_uint16(str->length, buf);
 
-    memcpy(buf->curpos, str->str, str->length);
-    str->str = buf->curpos; /* reset data position to indicate data in raw data
+    memcpy(buf->curpos, str->buf, str->length);
+    str->buf = buf->curpos; /* reset data position to indicate data in raw data
                                block */
     buf->curpos += str->length;
 
@@ -101,7 +101,7 @@ int read_uint16(struct pos_buf *buf, uint16_t *val)
     return 0;
 }
 
-int read_utf8_str(struct pos_buf *buf, mqtt_str_t *val)
+int read_utf8_str(struct pos_buf *buf, mqtt_buf_t *val)
 {
     uint16_t length = 0;
     int      ret    = read_uint16(buf, &length);
@@ -115,15 +115,15 @@ int read_utf8_str(struct pos_buf *buf, mqtt_str_t *val)
     val->length = length;
     /* Zero length UTF8 strings are permitted. */
     if (length > 0) {
-        val->str = buf->curpos;
+        val->buf = buf->curpos;
         buf->curpos += length;
     } else {
-        val->str = NULL;
+        val->buf = NULL;
     }
     return 0;
 }
 
-int read_str_data(struct pos_buf *buf, mqtt_str_t *val)
+int read_str_data(struct pos_buf *buf, mqtt_buf_t *val)
 {
     uint16_t length = 0;
     int      ret    = read_uint16(buf, &length);
@@ -136,10 +136,10 @@ int read_str_data(struct pos_buf *buf, mqtt_str_t *val)
 
     val->length = length;
     if (length > 0) {
-        val->str = buf->curpos;
+        val->buf = buf->curpos;
         buf->curpos += length;
     } else {
-        val->str = NULL;
+        val->buf = NULL;
     }
     return 0;
 }

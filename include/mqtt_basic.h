@@ -72,8 +72,8 @@ struct pos_buf {
 /* Compact string type */
 typedef struct {
     uint32_t length;
-    uint8_t *str;
-} mqtt_str_t;
+    uint8_t *buf;
+} mqtt_buf_t;
 
 /* CONNECT flags */
 typedef struct conn_flags_t {
@@ -90,7 +90,7 @@ typedef struct conn_flags_t {
  * Variable header parts
  ****************************************************************************/
 typedef struct mqtt_connect_vhdr_t {
-    mqtt_str_t protocol_name;
+    mqtt_buf_t protocol_name;
     uint8_t    protocol_version;
     conn_flags conn_flags;
     uint16_t   keep_alive;
@@ -102,7 +102,7 @@ typedef struct mqtt_connack_vhdr_t {
 } mqtt_connack_vhdr;
 
 typedef struct mqtt_publish_vhdr_t {
-    mqtt_str_t topic_name;
+    mqtt_buf_t topic_name;
     uint16_t   packet_id;
 } mqtt_publish_vhdr;
 
@@ -156,7 +156,7 @@ union mqtt_variable_header {
 };
 
 typedef struct {
-    mqtt_str_t topic_filter;
+    mqtt_buf_t topic_filter;
     uint8_t    qos;
 } mqtt_topic;
 
@@ -164,15 +164,15 @@ typedef struct {
  * Payloads
  ****************************************************************************/
 typedef struct {
-    mqtt_str_t client_id;
-    mqtt_str_t will_topic;
-    mqtt_str_t will_msg;
-    mqtt_str_t user_name;
-    mqtt_str_t password;
+    mqtt_buf_t client_id;
+    mqtt_buf_t will_topic;
+    mqtt_buf_t will_msg;
+    mqtt_buf_t user_name;
+    mqtt_buf_t password;
 } mqtt_connect_payload;
 
 typedef struct {
-    mqtt_str_t payload;
+    mqtt_buf_t payload;
 } mqtt_publish_payload;
 
 typedef struct {
@@ -187,7 +187,7 @@ typedef struct {
 } mqtt_suback_payload;
 
 typedef struct {
-    mqtt_str_t *topic_arr;   /* array of topic_arr continuous in memory */
+    mqtt_buf_t *topic_arr;   /* array of topic_arr continuous in memory */
     uint32_t    topic_count; /* not included in the message itself */
 } mqtt_unsubscribe_payload;
 
@@ -238,7 +238,7 @@ typedef struct {
     union mqtt_payload         payload;
 
     bool       is_decoded;     /* message is obtained from decoded or encoded */
-    mqtt_str_t entire_raw_msg; /* raw representation of whole packet */
+    mqtt_buf_t entire_raw_msg; /* raw representation of whole packet */
     int        attached_raw;   /* indicates if entire_raw_msg is to be owned */
 } mqtt_msg;
 
@@ -246,12 +246,12 @@ extern int byte_number_for_variable_length(uint32_t variable);
 extern int write_variable_length_value(uint32_t value, struct pos_buf *buf);
 extern int write_byte(uint8_t val, struct pos_buf *buf);
 extern int write_uint16(uint16_t value, struct pos_buf *buf);
-extern int write_byte_string(mqtt_str_t *str, struct pos_buf *buf);
+extern int write_byte_string(mqtt_buf_t *str, struct pos_buf *buf);
 
 extern int read_byte(struct pos_buf *buf, uint8_t *val);
 extern int read_uint16(struct pos_buf *buf, uint16_t *val);
-extern int read_utf8_str(struct pos_buf *buf, mqtt_str_t *val);
-extern int read_str_data(struct pos_buf *buf, mqtt_str_t *val);
+extern int read_utf8_str(struct pos_buf *buf, mqtt_buf_t *val);
+extern int read_str_data(struct pos_buf *buf, mqtt_buf_t *val);
 extern int read_packet_length(struct pos_buf *buf, uint32_t *length);
 
 #endif

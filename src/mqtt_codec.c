@@ -22,15 +22,23 @@ mqtt_msg *mqtt_msg_create(mqtt_packet_type packet_type)
     return msg;
 }
 
+int mqtt_msg_dup(mqtt_msg **dest, const mqtt_msg *src)
+{
+    *dest = mqtt_msg_create_empty();
+    memcpy(*dest, src, sizeof(src));
+
+    return mqtt_msg_encode(*dest);
+}
+
 int mqtt_msg_destroy(mqtt_msg *self)
 {
-    if (self->entire_raw_msg.str) {
+    if (self->entire_raw_msg.buf) {
         /* If we are builder or a is_decoded that have an attached raw data,
          * we should destroy raw data too. */
         if ((!self->is_decoded) || (self->is_decoded && self->attached_raw)) {
-            free(self->entire_raw_msg.str);
+            free(self->entire_raw_msg.buf);
         }
-        self->entire_raw_msg.str    = NULL;
+        self->entire_raw_msg.buf    = NULL;
         self->entire_raw_msg.length = 0;
     }
     free(self);
@@ -182,12 +190,12 @@ int encode_connect_msg(mqtt_msg *msg)
     uint32_t totallength = poslength + hdrlen;
 
     msg->entire_raw_msg.length = totallength;
-    msg->entire_raw_msg.str    = (uint8_t *) malloc(totallength);
-    memset(msg->entire_raw_msg.str, 0, msg->entire_raw_msg.length);
+    msg->entire_raw_msg.buf    = (uint8_t *) malloc(totallength);
+    memset(msg->entire_raw_msg.buf, 0, msg->entire_raw_msg.length);
 
     struct pos_buf buf;
-    buf.curpos = &msg->entire_raw_msg.str[0];
-    buf.endpos = &msg->entire_raw_msg.str[msg->entire_raw_msg.length];
+    buf.curpos = &msg->entire_raw_msg.buf[0];
+    buf.endpos = &msg->entire_raw_msg.buf[msg->entire_raw_msg.length];
 
     msg->fixed_header.common.packet_type = MQTT_CONNECT;
 
@@ -198,9 +206,9 @@ int encode_connect_msg(mqtt_msg *msg)
 
     /* Protocol Name */
     if (var_header->protocol_name.length == 0) {
-        var_header->protocol_name.str = (uint8_t *) "MQTT";
+        var_header->protocol_name.buf = (uint8_t *) "MQTT";
         var_header->protocol_name.length =
-            strlen((char *) var_header->protocol_name.str);
+            strlen((char *) var_header->protocol_name.buf);
     }
     write_byte_string(&var_header->protocol_name, &buf);
 
@@ -284,12 +292,12 @@ int encode_connack_msg(mqtt_msg *msg)
     uint32_t totallength = poslength + hdrlen;
 
     msg->entire_raw_msg.length = totallength;
-    msg->entire_raw_msg.str    = (uint8_t *) malloc(totallength);
-    memset(msg->entire_raw_msg.str, 0, msg->entire_raw_msg.length);
+    msg->entire_raw_msg.buf    = (uint8_t *) malloc(totallength);
+    memset(msg->entire_raw_msg.buf, 0, msg->entire_raw_msg.length);
 
     struct pos_buf buf;
-    buf.curpos = &msg->entire_raw_msg.str[0];
-    buf.endpos = &msg->entire_raw_msg.str[msg->entire_raw_msg.length];
+    buf.curpos = &msg->entire_raw_msg.buf[0];
+    buf.endpos = &msg->entire_raw_msg.buf[msg->entire_raw_msg.length];
 
     msg->fixed_header.common.packet_type = MQTT_CONNACK;
 
@@ -332,12 +340,12 @@ int encode_subscribe_msg(mqtt_msg *msg)
     uint32_t totallength = poslength + hdrlen;
 
     msg->entire_raw_msg.length = totallength;
-    msg->entire_raw_msg.str    = (uint8_t *) malloc(totallength);
-    memset(msg->entire_raw_msg.str, 0, msg->entire_raw_msg.length);
+    msg->entire_raw_msg.buf    = (uint8_t *) malloc(totallength);
+    memset(msg->entire_raw_msg.buf, 0, msg->entire_raw_msg.length);
 
     struct pos_buf buf;
-    buf.curpos = &msg->entire_raw_msg.str[0];
-    buf.endpos = &msg->entire_raw_msg.str[msg->entire_raw_msg.length];
+    buf.curpos = &msg->entire_raw_msg.buf[0];
+    buf.endpos = &msg->entire_raw_msg.buf[msg->entire_raw_msg.length];
 
     msg->fixed_header.common.packet_type = MQTT_SUBSCRIBE;
     msg->fixed_header.common.bit_1       = 1;
@@ -378,12 +386,12 @@ int encode_suback_msg(mqtt_msg *msg)
     uint32_t totallength = poslength + hdrlen;
 
     msg->entire_raw_msg.length = totallength;
-    msg->entire_raw_msg.str    = (uint8_t *) malloc(totallength);
-    memset(msg->entire_raw_msg.str, 0, msg->entire_raw_msg.length);
+    msg->entire_raw_msg.buf    = (uint8_t *) malloc(totallength);
+    memset(msg->entire_raw_msg.buf, 0, msg->entire_raw_msg.length);
 
     struct pos_buf buf;
-    buf.curpos = &msg->entire_raw_msg.str[0];
-    buf.endpos = &msg->entire_raw_msg.str[msg->entire_raw_msg.length];
+    buf.curpos = &msg->entire_raw_msg.buf[0];
+    buf.endpos = &msg->entire_raw_msg.buf[msg->entire_raw_msg.length];
 
     msg->fixed_header.common.packet_type = MQTT_SUBACK;
     write_byte(*(uint8_t *) &msg->fixed_header.common, &buf);
@@ -421,12 +429,12 @@ int encode_publish_msg(mqtt_msg *msg)
     uint32_t totallength = poslength + hdrlen;
 
     msg->entire_raw_msg.length = totallength;
-    msg->entire_raw_msg.str    = (uint8_t *) malloc(totallength);
-    memset(msg->entire_raw_msg.str, 0, msg->entire_raw_msg.length);
+    msg->entire_raw_msg.buf    = (uint8_t *) malloc(totallength);
+    memset(msg->entire_raw_msg.buf, 0, msg->entire_raw_msg.length);
 
     struct pos_buf buf;
-    buf.curpos = &msg->entire_raw_msg.str[0];
-    buf.endpos = &msg->entire_raw_msg.str[msg->entire_raw_msg.length];
+    buf.curpos = &msg->entire_raw_msg.buf[0];
+    buf.endpos = &msg->entire_raw_msg.buf[msg->entire_raw_msg.length];
 
     msg->fixed_header.publish.packet_type = MQTT_PUBLISH;
     write_byte(*(uint8_t *) &msg->fixed_header.publish, &buf);
@@ -446,9 +454,9 @@ int encode_publish_msg(mqtt_msg *msg)
 
     /* Payload */
     if (msg->payload.publish.payload.length > 0) {
-        memcpy(buf.curpos, msg->payload.publish.payload.str,
+        memcpy(buf.curpos, msg->payload.publish.payload.buf,
                msg->payload.publish.payload.length);
-        msg->payload.publish.payload.str =
+        msg->payload.publish.payload.buf =
             buf.curpos; /* reset data position to indicate data in raw data
                            block */
     }
@@ -470,12 +478,12 @@ int encode_puback_msg(mqtt_msg *msg)
     uint32_t totallength = poslength + hdrlen;
 
     msg->entire_raw_msg.length = totallength;
-    msg->entire_raw_msg.str    = (uint8_t *) malloc(totallength);
-    memset(msg->entire_raw_msg.str, 0, msg->entire_raw_msg.length);
+    msg->entire_raw_msg.buf    = (uint8_t *) malloc(totallength);
+    memset(msg->entire_raw_msg.buf, 0, msg->entire_raw_msg.length);
 
     struct pos_buf buf;
-    buf.curpos = &msg->entire_raw_msg.str[0];
-    buf.endpos = &msg->entire_raw_msg.str[msg->entire_raw_msg.length];
+    buf.curpos = &msg->entire_raw_msg.buf[0];
+    buf.endpos = &msg->entire_raw_msg.buf[msg->entire_raw_msg.length];
 
     write_byte(*(uint8_t *) &msg->fixed_header.publish, &buf);
 
@@ -502,12 +510,12 @@ int encode_pubrec_msg(mqtt_msg *msg)
     uint32_t totallength = poslength + hdrlen;
 
     msg->entire_raw_msg.length = totallength;
-    msg->entire_raw_msg.str    = (uint8_t *) malloc(totallength);
-    memset(msg->entire_raw_msg.str, 0, msg->entire_raw_msg.length);
+    msg->entire_raw_msg.buf    = (uint8_t *) malloc(totallength);
+    memset(msg->entire_raw_msg.buf, 0, msg->entire_raw_msg.length);
 
     struct pos_buf buf;
-    buf.curpos = &msg->entire_raw_msg.str[0];
-    buf.endpos = &msg->entire_raw_msg.str[msg->entire_raw_msg.length];
+    buf.curpos = &msg->entire_raw_msg.buf[0];
+    buf.endpos = &msg->entire_raw_msg.buf[msg->entire_raw_msg.length];
 
     write_byte(*(uint8_t *) &msg->fixed_header.publish, &buf);
 
@@ -534,12 +542,12 @@ int encode_pubrel_msg(mqtt_msg *msg)
     uint32_t totallength = poslength + hdrlen;
 
     msg->entire_raw_msg.length = totallength;
-    msg->entire_raw_msg.str    = (uint8_t *) malloc(totallength);
-    memset(msg->entire_raw_msg.str, 0, msg->entire_raw_msg.length);
+    msg->entire_raw_msg.buf    = (uint8_t *) malloc(totallength);
+    memset(msg->entire_raw_msg.buf, 0, msg->entire_raw_msg.length);
 
     struct pos_buf buf;
-    buf.curpos = &msg->entire_raw_msg.str[0];
-    buf.endpos = &msg->entire_raw_msg.str[msg->entire_raw_msg.length];
+    buf.curpos = &msg->entire_raw_msg.buf[0];
+    buf.endpos = &msg->entire_raw_msg.buf[msg->entire_raw_msg.length];
 
     msg->fixed_header.common.bit_1       = 1;
     msg->fixed_header.common.packet_type = MQTT_PUBREL;
@@ -568,12 +576,12 @@ int encode_pubcomp_msg(mqtt_msg *msg)
     uint32_t totallength = poslength + hdrlen;
 
     msg->entire_raw_msg.length = totallength;
-    msg->entire_raw_msg.str    = (uint8_t *) malloc(totallength);
-    memset(msg->entire_raw_msg.str, 0, msg->entire_raw_msg.length);
+    msg->entire_raw_msg.buf    = (uint8_t *) malloc(totallength);
+    memset(msg->entire_raw_msg.buf, 0, msg->entire_raw_msg.length);
 
     struct pos_buf buf;
-    buf.curpos = &msg->entire_raw_msg.str[0];
-    buf.endpos = &msg->entire_raw_msg.str[msg->entire_raw_msg.length];
+    buf.curpos = &msg->entire_raw_msg.buf[0];
+    buf.endpos = &msg->entire_raw_msg.buf[msg->entire_raw_msg.length];
 
     msg->fixed_header.common.packet_type = MQTT_PUBCOMP;
     write_byte(*(uint8_t *) &msg->fixed_header.common, &buf);
@@ -599,7 +607,7 @@ int encode_unsubscribe_msg(mqtt_msg *msg)
 
     /* Go through topic filters to calculate length information */
     for (size_t i = 0; i < uspld->topic_count; i++) {
-        mqtt_str_t *topic = &uspld->topic_arr[i];
+        mqtt_buf_t *topic = &uspld->topic_arr[i];
         poslength += topic->length;
         poslength += 2; // for 'length' field of Topic Filter, which is encoded
                         // as UTF-8 encoded strings */
@@ -611,12 +619,12 @@ int encode_unsubscribe_msg(mqtt_msg *msg)
     uint32_t totallength = poslength + hdrlen;
 
     msg->entire_raw_msg.length = totallength;
-    msg->entire_raw_msg.str    = (uint8_t *) malloc(totallength);
-    memset(msg->entire_raw_msg.str, 0, msg->entire_raw_msg.length);
+    msg->entire_raw_msg.buf    = (uint8_t *) malloc(totallength);
+    memset(msg->entire_raw_msg.buf, 0, msg->entire_raw_msg.length);
 
     struct pos_buf buf;
-    buf.curpos = &msg->entire_raw_msg.str[0];
-    buf.endpos = &msg->entire_raw_msg.str[msg->entire_raw_msg.length];
+    buf.curpos = &msg->entire_raw_msg.buf[0];
+    buf.endpos = &msg->entire_raw_msg.buf[msg->entire_raw_msg.length];
 
     msg->fixed_header.common.packet_type = MQTT_UNSUBSCRIBE;
     msg->fixed_header.common.bit_1       = 1;
@@ -632,7 +640,7 @@ int encode_unsubscribe_msg(mqtt_msg *msg)
 
     /* Subscribe topic_arr */
     for (size_t i = 0; i < uspld->topic_count; i++) {
-        mqtt_str_t *topic = &uspld->topic_arr[i];
+        mqtt_buf_t *topic = &uspld->topic_arr[i];
         write_byte_string(topic, &buf);
     }
 
@@ -653,12 +661,12 @@ int encode_unsuback_msg(mqtt_msg *msg)
     uint32_t totallength = poslength + hdrlen;
 
     msg->entire_raw_msg.length = totallength;
-    msg->entire_raw_msg.str    = (uint8_t *) malloc(totallength);
-    memset(msg->entire_raw_msg.str, 0, msg->entire_raw_msg.length);
+    msg->entire_raw_msg.buf    = (uint8_t *) malloc(totallength);
+    memset(msg->entire_raw_msg.buf, 0, msg->entire_raw_msg.length);
 
     struct pos_buf buf;
-    buf.curpos = &msg->entire_raw_msg.str[0];
-    buf.endpos = &msg->entire_raw_msg.str[msg->entire_raw_msg.length];
+    buf.curpos = &msg->entire_raw_msg.buf[0];
+    buf.endpos = &msg->entire_raw_msg.buf[msg->entire_raw_msg.length];
 
     msg->fixed_header.common.packet_type = MQTT_UNSUBACK;
     write_byte(*(uint8_t *) &msg->fixed_header.common, &buf);
@@ -684,12 +692,12 @@ int encode_pingreq_msg(mqtt_msg *msg)
     uint32_t totallength = poslength + hdrlen;
 
     msg->entire_raw_msg.length = totallength;
-    msg->entire_raw_msg.str    = (uint8_t *) malloc(totallength);
-    memset(msg->entire_raw_msg.str, 0, msg->entire_raw_msg.length);
+    msg->entire_raw_msg.buf    = (uint8_t *) malloc(totallength);
+    memset(msg->entire_raw_msg.buf, 0, msg->entire_raw_msg.length);
 
     struct pos_buf buf;
-    buf.curpos = &msg->entire_raw_msg.str[0];
-    buf.endpos = &msg->entire_raw_msg.str[msg->entire_raw_msg.length];
+    buf.curpos = &msg->entire_raw_msg.buf[0];
+    buf.endpos = &msg->entire_raw_msg.buf[msg->entire_raw_msg.length];
 
     msg->fixed_header.common.packet_type = MQTT_PINGREQ;
     write_byte(*(uint8_t *) &msg->fixed_header.common, &buf);
@@ -712,12 +720,12 @@ int encode_pingresp_msg(mqtt_msg *msg)
     uint32_t totallength = poslength + hdrlen;
 
     msg->entire_raw_msg.length = totallength;
-    msg->entire_raw_msg.str    = (uint8_t *) malloc(totallength);
-    memset(msg->entire_raw_msg.str, 0, msg->entire_raw_msg.length);
+    msg->entire_raw_msg.buf    = (uint8_t *) malloc(totallength);
+    memset(msg->entire_raw_msg.buf, 0, msg->entire_raw_msg.length);
 
     struct pos_buf buf;
-    buf.curpos = &msg->entire_raw_msg.str[0];
-    buf.endpos = &msg->entire_raw_msg.str[msg->entire_raw_msg.length];
+    buf.curpos = &msg->entire_raw_msg.buf[0];
+    buf.endpos = &msg->entire_raw_msg.buf[msg->entire_raw_msg.length];
 
     msg->fixed_header.common.packet_type = MQTT_PINGRESP;
     write_byte(*(uint8_t *) &msg->fixed_header.common, &buf);
@@ -741,12 +749,12 @@ int encode_disconnect_msg(mqtt_msg *msg)
     uint32_t totallength = poslength + hdrlen;
 
     msg->entire_raw_msg.length = totallength;
-    msg->entire_raw_msg.str    = (uint8_t *) malloc(totallength);
-    memset(msg->entire_raw_msg.str, 0, msg->entire_raw_msg.length);
+    msg->entire_raw_msg.buf    = (uint8_t *) malloc(totallength);
+    memset(msg->entire_raw_msg.buf, 0, msg->entire_raw_msg.length);
 
     struct pos_buf buf;
-    buf.curpos = &msg->entire_raw_msg.str[0];
-    buf.endpos = &msg->entire_raw_msg.str[msg->entire_raw_msg.length];
+    buf.curpos = &msg->entire_raw_msg.buf[0];
+    buf.endpos = &msg->entire_raw_msg.buf[msg->entire_raw_msg.length];
 
     msg->fixed_header.common.packet_type = MQTT_DISCONNECT;
     write_byte(*(uint8_t *) &msg->fixed_header.common, &buf);
@@ -898,13 +906,13 @@ mqtt_msg *decode_raw_packet_connect_msg(uint8_t *packet, uint32_t length,
     msg->used_bytes                    = prebytes - 1;
     msg->is_decoded                    = 1;
     msg->attached_raw                  = attached_raw;
-    msg->entire_raw_msg.str            = packet;
+    msg->entire_raw_msg.buf            = packet;
     msg->entire_raw_msg.length         = length;
 
     /* Set the pointer where the actual data block has started. */
     struct pos_buf buf;
-    buf.curpos = &msg->entire_raw_msg.str[prebytes];
-    buf.endpos = &msg->entire_raw_msg.str[msg->entire_raw_msg.length];
+    buf.curpos = &msg->entire_raw_msg.buf[prebytes];
+    buf.endpos = &msg->entire_raw_msg.buf[msg->entire_raw_msg.length];
 
     /* Protocol Name */
     ret = read_str_data(&buf, &msg->var_header.connect.protocol_name);
@@ -972,7 +980,7 @@ mqtt_msg *decode_raw_packet_connect_msg(uint8_t *packet, uint32_t length,
 
 ERROR:
     if (msg->attached_raw) {
-        free(msg->entire_raw_msg.str);
+        free(msg->entire_raw_msg.buf);
     }
     free(msg);
     return NULL;
@@ -992,13 +1000,13 @@ mqtt_msg *decode_raw_packet_connack_msg(uint8_t *packet, uint32_t length,
     msg->used_bytes                    = prebytes - 1;
     msg->is_decoded                    = 1;
     msg->attached_raw                  = attached_raw;
-    msg->entire_raw_msg.str            = packet;
+    msg->entire_raw_msg.buf            = packet;
     msg->entire_raw_msg.length         = length;
 
     /* Set the pointer where the actual data block has started. */
     struct pos_buf buf;
-    buf.curpos = &msg->entire_raw_msg.str[prebytes];
-    buf.endpos = &msg->entire_raw_msg.str[msg->entire_raw_msg.length];
+    buf.curpos = &msg->entire_raw_msg.buf[prebytes];
+    buf.endpos = &msg->entire_raw_msg.buf[msg->entire_raw_msg.length];
 
     /* Variable Header part */
     /* The variable header for the CONNACK Packet consists of two fields in the
@@ -1025,7 +1033,7 @@ mqtt_msg *decode_raw_packet_connack_msg(uint8_t *packet, uint32_t length,
 
 ERROR:
     if (msg->attached_raw) {
-        free(msg->entire_raw_msg.str);
+        free(msg->entire_raw_msg.buf);
     }
     free(msg);
     return NULL;
@@ -1050,15 +1058,15 @@ mqtt_msg *decode_raw_packet_subscribe_msg(uint8_t *packet, uint32_t length,
     msg->used_bytes                    = prebytes - 1;
     msg->is_decoded                    = 1;
     msg->attached_raw                  = attached_raw;
-    msg->entire_raw_msg.str            = packet;
+    msg->entire_raw_msg.buf            = packet;
     msg->entire_raw_msg.length         = length;
 
     mqtt_subscribe_payload *spld = &msg->payload.subscribe;
 
     /* Set the pointer where the actual data block has started. */
     struct pos_buf buf;
-    buf.curpos = &msg->entire_raw_msg.str[prebytes];
-    buf.endpos = &msg->entire_raw_msg.str[msg->entire_raw_msg.length];
+    buf.curpos = &msg->entire_raw_msg.buf[prebytes];
+    buf.endpos = &msg->entire_raw_msg.buf[msg->entire_raw_msg.length];
 
     /* Packet Identifier */
     ret = read_uint16(&buf, &msg->var_header.subscribe.packet_id);
@@ -1105,7 +1113,7 @@ mqtt_msg *decode_raw_packet_subscribe_msg(uint8_t *packet, uint32_t length,
 
 ERROR:
     if (msg->attached_raw) {
-        free(msg->entire_raw_msg.str);
+        free(msg->entire_raw_msg.buf);
     }
     free(msg);
     return NULL;
@@ -1126,13 +1134,13 @@ mqtt_msg *decode_raw_packet_suback_msg(uint8_t *packet, uint32_t length,
     msg->used_bytes                    = prebytes - 1;
     msg->is_decoded                    = 1;
     msg->attached_raw                  = attached_raw;
-    msg->entire_raw_msg.str            = packet;
+    msg->entire_raw_msg.buf            = packet;
     msg->entire_raw_msg.length         = length;
 
     /* Set the pointer where the actual data block has started. */
     struct pos_buf buf;
-    buf.curpos = &msg->entire_raw_msg.str[prebytes];
-    buf.endpos = &msg->entire_raw_msg.str[msg->entire_raw_msg.length];
+    buf.curpos = &msg->entire_raw_msg.buf[prebytes];
+    buf.endpos = &msg->entire_raw_msg.buf[msg->entire_raw_msg.length];
 
     /* Suback Packet-Id */
     int result = read_uint16(&buf, &msg->var_header.suback.packet_id);
@@ -1160,7 +1168,7 @@ mqtt_msg *decode_raw_packet_suback_msg(uint8_t *packet, uint32_t length,
 
 ERROR:
     if (msg->attached_raw) {
-        free(msg->entire_raw_msg.str);
+        free(msg->entire_raw_msg.buf);
     }
     free(msg);
     return NULL;
@@ -1182,13 +1190,13 @@ mqtt_msg *decode_raw_packet_publish_msg(uint8_t *packet, uint32_t length,
     msg->used_bytes                    = prebytes - 1;
     msg->is_decoded                    = 1;
     msg->attached_raw                  = attached_raw;
-    msg->entire_raw_msg.str            = packet;
+    msg->entire_raw_msg.buf            = packet;
     msg->entire_raw_msg.length         = length;
 
     /* Set the pointer where the actual data block has started. */
     struct pos_buf buf;
-    buf.curpos = &msg->entire_raw_msg.str[prebytes];
-    buf.endpos = &msg->entire_raw_msg.str[msg->entire_raw_msg.length];
+    buf.curpos = &msg->entire_raw_msg.buf[prebytes];
+    buf.endpos = &msg->entire_raw_msg.buf[msg->entire_raw_msg.length];
 
     /* Topic Name */
     ret = read_utf8_str(&buf, &msg->var_header.publish.topic_name);
@@ -1215,14 +1223,14 @@ mqtt_msg *decode_raw_packet_publish_msg(uint8_t *packet, uint32_t length,
     msg->payload.publish.payload.length = msg->fixed_header.remaining_length -
         (2 /* Length bytes of Topic Name */ +
          msg->var_header.publish.topic_name.length + packid_length);
-    msg->payload.publish.payload.str =
+    msg->payload.publish.payload.buf =
         (msg->payload.publish.payload.length > 0) ? buf.curpos : NULL;
 
     return msg;
 
 ERROR:
     if (msg->attached_raw) {
-        free(msg->entire_raw_msg.str);
+        free(msg->entire_raw_msg.buf);
     }
     free(msg);
     return NULL;
@@ -1242,13 +1250,13 @@ mqtt_msg *decode_raw_packet_puback_msg(uint8_t *packet, uint32_t length,
     msg->used_bytes                    = prebytes - 1;
     msg->is_decoded                    = 1;
     msg->attached_raw                  = attached_raw;
-    msg->entire_raw_msg.str            = packet;
+    msg->entire_raw_msg.buf            = packet;
     msg->entire_raw_msg.length         = length;
 
     /* Set the pointer where the actual data block has started. */
     struct pos_buf buf;
-    buf.curpos = &msg->entire_raw_msg.str[prebytes];
-    buf.endpos = &msg->entire_raw_msg.str[msg->entire_raw_msg.length];
+    buf.curpos = &msg->entire_raw_msg.buf[prebytes];
+    buf.endpos = &msg->entire_raw_msg.buf[msg->entire_raw_msg.length];
 
     int result = read_uint16(&buf, &msg->var_header.puback.packet_id);
     if (result != 0) {
@@ -1259,7 +1267,7 @@ mqtt_msg *decode_raw_packet_puback_msg(uint8_t *packet, uint32_t length,
 
 ERROR:
     if (msg->attached_raw) {
-        free(msg->entire_raw_msg.str);
+        free(msg->entire_raw_msg.buf);
     }
     free(msg);
     return NULL;
@@ -1279,13 +1287,13 @@ mqtt_msg *decode_raw_packet_pubrec_msg(uint8_t *packet, uint32_t length,
     msg->used_bytes                    = prebytes - 1;
     msg->is_decoded                    = 1;
     msg->attached_raw                  = attached_raw;
-    msg->entire_raw_msg.str            = packet;
+    msg->entire_raw_msg.buf            = packet;
     msg->entire_raw_msg.length         = length;
 
     /* Set the pointer where the actual data block has started. */
     struct pos_buf buf;
-    buf.curpos = &msg->entire_raw_msg.str[prebytes];
-    buf.endpos = &msg->entire_raw_msg.str[msg->entire_raw_msg.length];
+    buf.curpos = &msg->entire_raw_msg.buf[prebytes];
+    buf.endpos = &msg->entire_raw_msg.buf[msg->entire_raw_msg.length];
 
     int result = read_uint16(&buf, &msg->var_header.pubrec.packet_id);
     if (result != 0) {
@@ -1296,7 +1304,7 @@ mqtt_msg *decode_raw_packet_pubrec_msg(uint8_t *packet, uint32_t length,
 
 ERROR:
     if (msg->attached_raw) {
-        free(msg->entire_raw_msg.str);
+        free(msg->entire_raw_msg.buf);
     }
     free(msg);
     return NULL;
@@ -1316,13 +1324,13 @@ mqtt_msg *decode_raw_packet_pubrel_msg(uint8_t *packet, uint32_t length,
     msg->used_bytes                    = prebytes - 1;
     msg->is_decoded                    = 1;
     msg->attached_raw                  = attached_raw;
-    msg->entire_raw_msg.str            = packet;
+    msg->entire_raw_msg.buf            = packet;
     msg->entire_raw_msg.length         = length;
 
     /* Set the pointer where the actual data block has started. */
     struct pos_buf buf;
-    buf.curpos = &msg->entire_raw_msg.str[prebytes];
-    buf.endpos = &msg->entire_raw_msg.str[msg->entire_raw_msg.length];
+    buf.curpos = &msg->entire_raw_msg.buf[prebytes];
+    buf.endpos = &msg->entire_raw_msg.buf[msg->entire_raw_msg.length];
 
     int result = read_uint16(&buf, &msg->var_header.pubrel.packet_id);
     if (result != 0) {
@@ -1333,7 +1341,7 @@ mqtt_msg *decode_raw_packet_pubrel_msg(uint8_t *packet, uint32_t length,
 
 ERROR:
     if (msg->attached_raw) {
-        free(msg->entire_raw_msg.str);
+        free(msg->entire_raw_msg.buf);
     }
     free(msg);
     return NULL;
@@ -1353,13 +1361,13 @@ mqtt_msg *decode_raw_packet_pubcomp_msg(uint8_t *packet, uint32_t length,
     msg->used_bytes                    = prebytes - 1;
     msg->is_decoded                    = 1;
     msg->attached_raw                  = attached_raw;
-    msg->entire_raw_msg.str            = packet;
+    msg->entire_raw_msg.buf            = packet;
     msg->entire_raw_msg.length         = length;
 
     /* Set the pointer where the actual data block has started. */
     struct pos_buf buf;
-    buf.curpos = &msg->entire_raw_msg.str[prebytes];
-    buf.endpos = &msg->entire_raw_msg.str[msg->entire_raw_msg.length];
+    buf.curpos = &msg->entire_raw_msg.buf[prebytes];
+    buf.endpos = &msg->entire_raw_msg.buf[msg->entire_raw_msg.length];
 
     int result = read_uint16(&buf, &msg->var_header.pubcomp.packet_id);
     if (result != 0) {
@@ -1370,7 +1378,7 @@ mqtt_msg *decode_raw_packet_pubcomp_msg(uint8_t *packet, uint32_t length,
 
 ERROR:
     if (msg->attached_raw) {
-        free(msg->entire_raw_msg.str);
+        free(msg->entire_raw_msg.buf);
     }
     free(msg);
     return NULL;
@@ -1396,15 +1404,15 @@ mqtt_msg *decode_raw_packet_unsubscribe_msg(uint8_t *packet, uint32_t length,
     msg->used_bytes                    = prebytes - 1;
     msg->is_decoded                    = 1;
     msg->attached_raw                  = attached_raw;
-    msg->entire_raw_msg.str            = packet;
+    msg->entire_raw_msg.buf            = packet;
     msg->entire_raw_msg.length         = length;
 
     mqtt_unsubscribe_payload *uspld = &msg->payload.unsubscribe;
 
     /* Set the pointer where the actual data block has started. */
     struct pos_buf buf;
-    buf.curpos = &msg->entire_raw_msg.str[prebytes];
-    buf.endpos = &msg->entire_raw_msg.str[msg->entire_raw_msg.length];
+    buf.curpos = &msg->entire_raw_msg.buf[prebytes];
+    buf.endpos = &msg->entire_raw_msg.buf[msg->entire_raw_msg.length];
 
     /* Packet Identifier */
     ret = read_uint16(&buf, &msg->var_header.unsubscribe.packet_id);
@@ -1428,7 +1436,7 @@ mqtt_msg *decode_raw_packet_unsubscribe_msg(uint8_t *packet, uint32_t length,
     }
 
     /* Allocate topic array */
-    uspld->topic_arr = (mqtt_str_t *) malloc(topic_count * sizeof(mqtt_str_t));
+    uspld->topic_arr = (mqtt_buf_t *) malloc(topic_count * sizeof(mqtt_buf_t));
 
     /* Set back current position */
     buf.curpos = saved_current_pos;
@@ -1445,7 +1453,7 @@ mqtt_msg *decode_raw_packet_unsubscribe_msg(uint8_t *packet, uint32_t length,
 
 ERROR:
     if (msg->attached_raw) {
-        free(msg->entire_raw_msg.str);
+        free(msg->entire_raw_msg.buf);
     }
     free(msg);
     return NULL;
@@ -1466,13 +1474,13 @@ mqtt_msg *decode_raw_packet_unsuback_msg(uint8_t *packet, uint32_t length,
     msg->used_bytes                    = prebytes - 1;
     msg->is_decoded                    = 1;
     msg->attached_raw                  = attached_raw;
-    msg->entire_raw_msg.str            = packet;
+    msg->entire_raw_msg.buf            = packet;
     msg->entire_raw_msg.length         = length;
 
     /* Set the pointer where the actual data block has started. */
     struct pos_buf buf;
-    buf.curpos = &msg->entire_raw_msg.str[prebytes];
-    buf.endpos = &msg->entire_raw_msg.str[msg->entire_raw_msg.length];
+    buf.curpos = &msg->entire_raw_msg.buf[prebytes];
+    buf.endpos = &msg->entire_raw_msg.buf[msg->entire_raw_msg.length];
 
     /* Unsuback Packet-Id */
     int result = read_uint16(&buf, &msg->var_header.unsuback.packet_id);
@@ -1485,7 +1493,7 @@ mqtt_msg *decode_raw_packet_unsuback_msg(uint8_t *packet, uint32_t length,
 
 ERROR:
     if (msg->attached_raw) {
-        free(msg->entire_raw_msg.str);
+        free(msg->entire_raw_msg.buf);
     }
     free(msg);
     return NULL;
@@ -1575,7 +1583,7 @@ mqtt_msg *mqtt_msg_decode_raw_packet_det(uint8_t *packet, uint32_t length,
         msg->used_bytes                      = prebytes - 1;
         msg->is_decoded                      = 1;
         msg->attached_raw                    = attached_raw;
-        msg->entire_raw_msg.str              = packet;
+        msg->entire_raw_msg.buf              = packet;
         msg->entire_raw_msg.length           = length;
     } break;
 
@@ -1625,7 +1633,7 @@ const char *get_packet_type_str(mqtt_packet_type packtype)
     return packTypeNames[packtype];
 }
 
-int mqtt_msg_dump(mqtt_msg *msg, mqtt_str_t *buf, bool print_bytes)
+int mqtt_msg_dump(mqtt_msg *msg, mqtt_buf_t *buf, bool print_bytes)
 {
     uint32_t pos = 0;
     uint32_t ret = 0;
@@ -1633,7 +1641,7 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_str_t *buf, bool print_bytes)
     size_t i = 0;
 
     ret =
-        sprintf((char *) &buf->str[pos],
+        sprintf((char *) &buf->buf[pos],
                 "\n----- MQTT Message Dump -----\n"
                 "Packet Type        :   %d (%s)\n"
                 "Packet Flags       :   |%d|%d|%d|%d|\n"
@@ -1651,12 +1659,12 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_str_t *buf, bool print_bytes)
     /* Print variable header part */
     switch (msg->fixed_header.common.packet_type) {
     case MQTT_CONNECT: {
-        ret = sprintf((char *) &buf->str[pos],
+        ret = sprintf((char *) &buf->buf[pos],
                       "Protocol Name   :   %.*s\n"
                       "Protocol Version:   %d\n"
                       "Keep Alive      :   %d\n",
                       msg->var_header.connect.protocol_name.length,
-                      msg->var_header.connect.protocol_name.str,
+                      msg->var_header.connect.protocol_name.buf,
                       (int) msg->var_header.connect.protocol_version,
                       (int) msg->var_header.connect.keep_alive);
         if ((ret < 0) || ((pos + ret) > buf->length)) {
@@ -1665,7 +1673,7 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_str_t *buf, bool print_bytes)
         pos += ret;
         conn_flags flags_set = msg->var_header.connect.conn_flags;
 
-        ret = sprintf((char *) &buf->str[pos],
+        ret = sprintf((char *) &buf->buf[pos],
                       "Connect Flags:\n   "
                       "   Clean Session Flag :    %s,\n"
                       "   Will Flag          :    %s,\n"
@@ -1683,37 +1691,37 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_str_t *buf, bool print_bytes)
             return 1;
         }
         pos += ret;
-        ret = sprintf((char *) &buf->str[pos], "Client Identifier    : %.*s\n",
+        ret = sprintf((char *) &buf->buf[pos], "Client Identifier    : %.*s\n",
                       msg->payload.connect.client_id.length,
-                      msg->payload.connect.client_id.str);
+                      msg->payload.connect.client_id.buf);
         if ((ret < 0) || ((pos + ret) > buf->length)) {
             return 1;
         }
         pos += ret;
-        ret = sprintf((char *) &buf->str[pos], "Will Topic           : %.*s\n",
+        ret = sprintf((char *) &buf->buf[pos], "Will Topic           : %.*s\n",
                       msg->payload.connect.will_topic.length,
-                      msg->payload.connect.will_topic.str);
+                      msg->payload.connect.will_topic.buf);
         if ((ret < 0) || ((pos + ret) > buf->length)) {
             return 1;
         }
         pos += ret;
-        ret = sprintf((char *) &buf->str[pos], "Will Message         : %.*s\n",
+        ret = sprintf((char *) &buf->buf[pos], "Will Message         : %.*s\n",
                       msg->payload.connect.will_msg.length,
-                      msg->payload.connect.will_msg.str);
+                      msg->payload.connect.will_msg.buf);
         if ((ret < 0) || ((pos + ret) > buf->length)) {
             return 1;
         }
         pos += ret;
-        ret = sprintf((char *) &buf->str[pos], "User Name            : %.*s\n",
+        ret = sprintf((char *) &buf->buf[pos], "User Name            : %.*s\n",
                       msg->payload.connect.user_name.length,
-                      msg->payload.connect.user_name.str);
+                      msg->payload.connect.user_name.buf);
         if ((ret < 0) || ((pos + ret) > buf->length)) {
             return 1;
         }
         pos += ret;
-        ret = sprintf((char *) &buf->str[pos], "Password             : %.*s\n",
+        ret = sprintf((char *) &buf->buf[pos], "Password             : %.*s\n",
                       msg->payload.connect.password.length,
-                      msg->payload.connect.password.str);
+                      msg->payload.connect.password.buf);
         if ((ret < 0) || ((pos + ret) > buf->length)) {
             return 1;
         }
@@ -1721,7 +1729,7 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_str_t *buf, bool print_bytes)
     } break;
 
     case MQTT_CONNACK:
-        ret = sprintf((char *) &buf->str[pos],
+        ret = sprintf((char *) &buf->buf[pos],
                       "Connack Flags      : %d\n"
                       "Connack Return-Code: %d\n",
                       (int) msg->var_header.connack.connack_flags,
@@ -1734,7 +1742,7 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_str_t *buf, bool print_bytes)
 
     case MQTT_PUBLISH: {
 
-        ret = sprintf((char *) &buf->str[pos],
+        ret = sprintf((char *) &buf->buf[pos],
                       "Publis Flags:\n"
                       "   Retain :     %s\n"
                       "   QoS    :     %d\n"
@@ -1746,14 +1754,14 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_str_t *buf, bool print_bytes)
             return 1;
         }
         pos += ret;
-        ret = sprintf((char *) &buf->str[pos],
+        ret = sprintf((char *) &buf->buf[pos],
                       "Topic     : %.*s\n"
                       "Packet Id : %d\nPayload   : %.*s\n",
                       msg->var_header.publish.topic_name.length,
-                      msg->var_header.publish.topic_name.str,
+                      msg->var_header.publish.topic_name.buf,
                       (int) msg->var_header.publish.packet_id,
                       msg->payload.publish.payload.length,
-                      msg->payload.publish.payload.str);
+                      msg->payload.publish.payload.buf);
         if ((ret < 0) || ((pos + ret) > buf->length)) {
             return 1;
         }
@@ -1761,7 +1769,7 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_str_t *buf, bool print_bytes)
     } break;
 
     case MQTT_PUBACK:
-        ret = sprintf((char *) &buf->str[pos], "Packet-Id: %d\n",
+        ret = sprintf((char *) &buf->buf[pos], "Packet-Id: %d\n",
                       msg->var_header.puback.packet_id);
         if ((ret < 0) || ((pos + ret) > buf->length)) {
             return 1;
@@ -1770,7 +1778,7 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_str_t *buf, bool print_bytes)
         break;
 
     case MQTT_PUBREC:
-        ret = sprintf((char *) &buf->str[pos], "Packet-Id: %d\n",
+        ret = sprintf((char *) &buf->buf[pos], "Packet-Id: %d\n",
                       msg->var_header.pubrec.packet_id);
         if ((ret < 0) || ((pos + ret) > buf->length)) {
             return 1;
@@ -1779,7 +1787,7 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_str_t *buf, bool print_bytes)
         break;
 
     case MQTT_PUBREL:
-        ret = sprintf((char *) &buf->str[pos], "Packet-Id: %d\n",
+        ret = sprintf((char *) &buf->buf[pos], "Packet-Id: %d\n",
                       msg->var_header.pubrel.packet_id);
         if ((ret < 0) || ((pos + ret) > buf->length)) {
             return 1;
@@ -1788,7 +1796,7 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_str_t *buf, bool print_bytes)
         break;
 
     case MQTT_PUBCOMP:
-        ret = sprintf((char *) &buf->str[pos], "Packet-Id: %d\n",
+        ret = sprintf((char *) &buf->buf[pos], "Packet-Id: %d\n",
                       msg->var_header.pubcomp.packet_id);
         if ((ret < 0) || ((pos + ret) > buf->length)) {
             return 1;
@@ -1797,7 +1805,7 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_str_t *buf, bool print_bytes)
         break;
 
     case MQTT_SUBSCRIBE: {
-        ret = sprintf((char *) &buf->str[pos], "Packet-Id           : %d\n",
+        ret = sprintf((char *) &buf->buf[pos], "Packet-Id           : %d\n",
                       msg->var_header.subscribe.packet_id);
         if ((ret < 0) || ((pos + ret) > buf->length)) {
             return 1;
@@ -1805,11 +1813,11 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_str_t *buf, bool print_bytes)
         pos += ret;
         for (uint32_t i = 0; i < msg->payload.subscribe.topic_count; i++) {
             ret = sprintf(
-                (char *) &buf->str[pos],
+                (char *) &buf->buf[pos],
                 "Topic Filter[%u]    :   %.*s\n"
                 "Requested QoS[%u]   :   %d\n",
                 i, msg->payload.subscribe.topic_arr[i].topic_filter.length,
-                msg->payload.subscribe.topic_arr[i].topic_filter.str, i,
+                msg->payload.subscribe.topic_arr[i].topic_filter.buf, i,
                 (int) msg->payload.subscribe.topic_arr[i].qos);
             if ((ret < 0) || ((pos + ret) > buf->length)) {
                 return 1;
@@ -1819,14 +1827,14 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_str_t *buf, bool print_bytes)
     } break;
 
     case MQTT_SUBACK: {
-        ret = sprintf((char *) &buf->str[pos], "Packet-Id: %d\n",
+        ret = sprintf((char *) &buf->buf[pos], "Packet-Id: %d\n",
                       msg->var_header.suback.packet_id);
         if ((ret < 0) || ((pos + ret) > buf->length)) {
             return 1;
         }
         pos += ret;
         for (uint32_t i = 0; i < msg->payload.suback.ret_code_count; i++) {
-            ret = sprintf((char *) &buf->str[pos], "Return Code[%u]: %d\n", i,
+            ret = sprintf((char *) &buf->buf[pos], "Return Code[%u]: %d\n", i,
                           (int) msg->payload.suback.ret_code_arr[i]);
             if ((ret < 0) || ((pos + ret) > buf->length)) {
                 return 1;
@@ -1836,7 +1844,7 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_str_t *buf, bool print_bytes)
     } break;
 
     case MQTT_UNSUBSCRIBE: {
-        ret = sprintf((char *) &buf->str[pos], "Packet-Id: %d\n",
+        ret = sprintf((char *) &buf->buf[pos], "Packet-Id: %d\n",
                       msg->var_header.unsubscribe.packet_id);
         if ((ret < 0) || ((pos + ret) > buf->length)) {
             return 1;
@@ -1844,9 +1852,9 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_str_t *buf, bool print_bytes)
         pos += ret;
         for (i = 0; i < msg->payload.unsubscribe.topic_count; i++) {
             ret =
-                sprintf((char *) &buf->str[pos], "Topic Filter[%lu] :  %.*s\n",
+                sprintf((char *) &buf->buf[pos], "Topic Filter[%lu] :  %.*s\n",
                         i, msg->payload.unsubscribe.topic_arr[i].length,
-                        (char *) msg->payload.unsubscribe.topic_arr[i].str);
+                        (char *) msg->payload.unsubscribe.topic_arr[i].buf);
             if ((ret < 0) || ((pos + ret) > buf->length)) {
                 return 1;
             }
@@ -1855,7 +1863,7 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_str_t *buf, bool print_bytes)
     } break;
 
     case MQTT_UNSUBACK:
-        ret = sprintf((char *) &buf->str[pos], "Packet-Id: %d\n",
+        ret = sprintf((char *) &buf->buf[pos], "Packet-Id: %d\n",
                       msg->var_header.unsuback.packet_id);
         if ((ret < 0) || ((pos + ret) > buf->length)) {
             return 1;
@@ -1875,27 +1883,27 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_str_t *buf, bool print_bytes)
     }
 
     if (print_bytes) {
-        ret = sprintf((char *) &buf->str[pos], "Raw Message: ");
+        ret = sprintf((char *) &buf->buf[pos], "Raw Message: ");
         if ((ret < 0) || ((pos + ret) > buf->length)) {
             return 1;
         }
         pos += ret;
         for (i = 0; i < msg->entire_raw_msg.length; i++) {
             // if ((i % 16) == 0) {
-            //     buf->str[pos++] = '\n';
+            //     buf->buf[pos++] = '\n';
             // }
-            ret = sprintf((char *) &buf->str[pos], "%02x ",
-                          ((uint8_t) (msg->entire_raw_msg.str[i] & 0xff)));
+            ret = sprintf((char *) &buf->buf[pos], "%02x ",
+                          ((uint8_t) (msg->entire_raw_msg.buf[i] & 0xff)));
             if ((ret < 0) || ((pos + ret) > buf->length)) {
                 return 1;
             }
             pos += ret;
         }
-        buf->str[pos++] = '\n';
+        buf->buf[pos++] = '\n';
         if (pos > msg->entire_raw_msg.length) {
             return 1;
         }
-        sprintf((char *) &buf->str[pos], "------------------------\n");
+        sprintf((char *) &buf->buf[pos], "------------------------\n");
     }
     return 0;
 }

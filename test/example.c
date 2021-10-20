@@ -13,11 +13,58 @@
 
 #define BUFFSIZE 1024
 
+void dup_test(void)
+{
+    int        ret = 0;
+    uint8_t    buffer[BUFFSIZE];
+    mqtt_buf_t buff;
+    buff.buf    = &buffer[0];
+    buff.length = BUFFSIZE;
+
+    char *topic_name = strdup("/nanomq/mqtt/msg");
+    char *payload    = strdup("{\"name\" : \"/nanomq\",\"seq\" : 1}");
+
+    /* PUBLISH */
+    mqtt_msg *pubmsg                          = mqtt_msg_create(MQTT_PUBLISH);
+    pubmsg->fixed_header.publish.dup          = 0;
+    pubmsg->fixed_header.publish.qos          = 0;
+    pubmsg->fixed_header.publish.retain       = 0;
+    pubmsg->var_header.publish.packet_id      = 999;
+    pubmsg->var_header.publish.topic_name.buf = (uint8_t *) topic_name;
+    pubmsg->var_header.publish.topic_name.length = strlen(topic_name);
+    pubmsg->payload.publish.payload.buf          = (uint8_t *) payload;
+    pubmsg->payload.publish.payload.length       = strlen(payload);
+
+    ret = mqtt_msg_encode(pubmsg);
+    if (ret == 0) {
+        /* free allocated texts to verify that now built message uses inner raw
+         * data */
+        free(topic_name);
+        topic_name = NULL;
+        free(payload);
+        payload = NULL;
+        memset(buff.buf, 0, buff.length);
+        mqtt_msg_dump(pubmsg, &buff, 1);
+        printf("%s", buff.buf);
+    } else {
+        printf("Problem on building pubmsg example : %d\n", ret);
+    }
+    mqtt_msg_dump(pubmsg, &buff, 1);
+    memset(buff.buf, 0, BUFFSIZE);
+    mqtt_msg *dup_msg;
+
+    mqtt_msg_dup(&dup_msg, pubmsg);
+    mqtt_msg_dump(dup_msg, &buff, 1);
+
+    mqtt_msg_destroy(pubmsg);
+    mqtt_msg_destroy(dup_msg);
+}
+
 void decode_test(void)
 {
     uint8_t    buffer[BUFFSIZE];
-    mqtt_str_t buff;
-    buff.str    = &buffer[0];
+    mqtt_buf_t buff;
+    buff.buf    = &buffer[0];
     buff.length = BUFFSIZE;
 
     uint8_t connect1[] = { 0x10, 0x17, 0x00, 0x04, 0x4d, 0x51, 0x54, 0x54, 0x04,
@@ -85,9 +132,9 @@ void decode_test(void)
     msg =
         mqtt_msg_decode_raw_packet(connect1, sizeof(connect1), &parse_error, 0);
     if (parse_error == MQTT_SUCCESS) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(msg, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("\n*** Parse error: %d for connect1\n", parse_error);
     }
@@ -98,9 +145,9 @@ void decode_test(void)
     msg =
         mqtt_msg_decode_raw_packet(connect2, sizeof(connect2), &parse_error, 0);
     if (parse_error == MQTT_SUCCESS) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(msg, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("\n*** Parse error: %d for connect2\n", parse_error);
     }
@@ -111,9 +158,9 @@ void decode_test(void)
     msg = mqtt_msg_decode_raw_packet(disconnect1, sizeof(disconnect1),
                                      &parse_error, 0);
     if (parse_error == MQTT_SUCCESS) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(msg, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("\n*** Parse error: %d for disconnect1\n", parse_error);
     }
@@ -124,9 +171,9 @@ void decode_test(void)
     msg =
         mqtt_msg_decode_raw_packet(publish1, sizeof(publish1), &parse_error, 0);
     if (parse_error == MQTT_SUCCESS) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(msg, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("\n*** Parse error: %d for publish1\n", parse_error);
     }
@@ -137,9 +184,9 @@ void decode_test(void)
     msg =
         mqtt_msg_decode_raw_packet(publish2, sizeof(publish2), &parse_error, 0);
     if (parse_error == MQTT_SUCCESS) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(msg, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("Parse error: %d for publish2\n", parse_error);
     }
@@ -150,9 +197,9 @@ void decode_test(void)
     msg = mqtt_msg_decode_raw_packet(
         publish_corrupted, sizeof(publish_corrupted), &parse_error, 0);
     if (parse_error == MQTT_SUCCESS) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(msg, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("Parse error: %d for publish_corrupted\n", parse_error);
     }
@@ -163,9 +210,9 @@ void decode_test(void)
     msg = mqtt_msg_decode_raw_packet(subscribe1, sizeof(subscribe1),
                                      &parse_error, 0);
     if (parse_error == MQTT_SUCCESS) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(msg, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("Parse error: %d for subscribe1\n", parse_error);
     }
@@ -176,9 +223,9 @@ void decode_test(void)
 
     msg = mqtt_msg_decode_raw_packet(suback1, sizeof(suback1), &parse_error, 0);
     if (parse_error == MQTT_SUCCESS) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(msg, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("Parse error: %d for suback1\n", parse_error);
     }
@@ -189,9 +236,9 @@ void decode_test(void)
 
     msg = mqtt_msg_decode_raw_packet(suback2, sizeof(suback2), &parse_error, 0);
     if (parse_error == MQTT_SUCCESS) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(msg, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("Parse error: %d for suback2\n", parse_error);
     }
@@ -202,9 +249,9 @@ void decode_test(void)
 
     msg = mqtt_msg_decode_raw_packet(puback1, sizeof(puback1), &parse_error, 0);
     if (parse_error == MQTT_SUCCESS) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(msg, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("Parse error: %d for puback1\n", parse_error);
     }
@@ -214,9 +261,9 @@ void decode_test(void)
 
     msg = mqtt_msg_decode_raw_packet(pubrec1, sizeof(pubrec1), &parse_error, 0);
     if (parse_error == MQTT_SUCCESS) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(msg, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("Parse error: %d for pubrec1\n", parse_error);
     }
@@ -226,9 +273,9 @@ void decode_test(void)
 
     msg = mqtt_msg_decode_raw_packet(pubrel1, sizeof(pubrel1), &parse_error, 0);
     if (parse_error == MQTT_SUCCESS) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(msg, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("Parse error: %d for pubrel1\n", parse_error);
     }
@@ -239,9 +286,9 @@ void decode_test(void)
     msg =
         mqtt_msg_decode_raw_packet(pubcomp1, sizeof(pubcomp1), &parse_error, 0);
     if (parse_error == MQTT_SUCCESS) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(msg, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("Parse error: %d for pubcomp1\n", parse_error);
     }
@@ -252,9 +299,9 @@ void decode_test(void)
     msg = mqtt_msg_decode_raw_packet(unsubscribe1, sizeof(unsubscribe1),
                                      &parse_error, 0);
     if (parse_error == MQTT_SUCCESS) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(msg, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("Parse error: %d for unsubscribe1\n", parse_error);
     }
@@ -266,9 +313,9 @@ void decode_test(void)
     msg = mqtt_msg_decode_raw_packet(unsuback1, sizeof(unsuback1), &parse_error,
                                      0);
     if (parse_error == MQTT_SUCCESS) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(msg, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("Parse error: %d for unsuback1\n", parse_error);
     }
@@ -279,9 +326,9 @@ void decode_test(void)
     msg =
         mqtt_msg_decode_raw_packet(pingreq1, sizeof(pingreq1), &parse_error, 0);
     if (parse_error == MQTT_SUCCESS) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(msg, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("Parse error: %d for pingreq1\n", parse_error);
     }
@@ -292,9 +339,9 @@ void decode_test(void)
     msg = mqtt_msg_decode_raw_packet(pingresp1, sizeof(pingresp1), &parse_error,
                                      0);
     if (parse_error == MQTT_SUCCESS) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(msg, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("Parse error: %d for pingresp1\n", parse_error);
     }
@@ -307,32 +354,32 @@ void encode_test(void)
 {
     int        ret = 0;
     uint8_t    buffer[BUFFSIZE];
-    mqtt_str_t buff; // = {&buffer[0], (uint32_t)BUFFSIZE};
-    buff.str    = &buffer[0];
+    mqtt_buf_t buff; // = {&buffer[0], (uint32_t)BUFFSIZE};
+    buff.buf    = &buffer[0];
     buff.length = BUFFSIZE;
 
     /* CONNECT */
     mqtt_msg *connmsg = mqtt_msg_create(MQTT_CONNECT);
-    connmsg->var_header.connect.protocol_name.str    = (uint8_t *) "MQTT";
+    connmsg->var_header.connect.protocol_name.buf    = (uint8_t *) "MQTT";
     connmsg->var_header.connect.protocol_name.length = 4;
     connmsg->var_header.connect.protocol_version =
         MQTT_VERSION_3_1_1; // MQTT_VERSION_3_1_1;
     connmsg->var_header.connect.keep_alive = 60;
 
-    connmsg->payload.connect.will_topic.str = (uint8_t *) "will_topic";
+    connmsg->payload.connect.will_topic.buf = (uint8_t *) "will_topic";
     connmsg->payload.connect.will_topic.length =
-        strlen((char *) connmsg->payload.connect.will_topic.str);
-    connmsg->payload.connect.will_msg.str = (uint8_t *) "bye-bye";
+        strlen((char *) connmsg->payload.connect.will_topic.buf);
+    connmsg->payload.connect.will_msg.buf = (uint8_t *) "bye-bye";
     connmsg->payload.connect.will_msg.length =
-        strlen((char *) connmsg->payload.connect.will_msg.str);
+        strlen((char *) connmsg->payload.connect.will_msg.buf);
 
-    connmsg->payload.connect.user_name.str = (uint8_t *) "alvin";
+    connmsg->payload.connect.user_name.buf = (uint8_t *) "alvin";
     connmsg->payload.connect.user_name.length =
-        strlen((char *) connmsg->payload.connect.user_name.str);
+        strlen((char *) connmsg->payload.connect.user_name.buf);
 
-    connmsg->payload.connect.password.str = (uint8_t *) "HHH123456";
+    connmsg->payload.connect.password.buf = (uint8_t *) "HHH123456";
     connmsg->payload.connect.password.length =
-        strlen((char *) connmsg->payload.connect.password.str);
+        strlen((char *) connmsg->payload.connect.password.buf);
 
     connmsg->var_header.connect.conn_flags.clean_session = 1;
     connmsg->var_header.connect.conn_flags.will_retain   = 0;
@@ -341,15 +388,15 @@ void encode_test(void)
     connmsg->var_header.connect.conn_flags.username_flag = 1;
     connmsg->var_header.connect.conn_flags.password_flag = 1;
 
-    connmsg->payload.connect.client_id.str = (uint8_t *) "Test-Client1";
+    connmsg->payload.connect.client_id.buf = (uint8_t *) "Test-Client1";
     connmsg->payload.connect.client_id.length =
-        strlen((char *) connmsg->payload.connect.client_id.str);
+        strlen((char *) connmsg->payload.connect.client_id.buf);
 
     ret = mqtt_msg_encode(connmsg);
     if (ret == 0) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(connmsg, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("Problem on building connect example : %d\n", ret);
     }
@@ -361,9 +408,9 @@ void encode_test(void)
     connack->var_header.connack.connack_flags |= 1;
     ret = mqtt_msg_encode(connack);
     if (ret == 0) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(connack, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("Problem on building connack example : %d\n", ret);
     }
@@ -375,19 +422,19 @@ void encode_test(void)
     pubmsg->fixed_header.publish.qos          = 2;
     pubmsg->fixed_header.publish.retain       = 0;
     pubmsg->var_header.publish.packet_id      = 876;
-    pubmsg->var_header.publish.topic_name.str = (uint8_t *) "/nanomq/mqtt/msg";
+    pubmsg->var_header.publish.topic_name.buf = (uint8_t *) "/nanomq/mqtt/msg";
     pubmsg->var_header.publish.topic_name.length =
-        strlen((char *) pubmsg->var_header.publish.topic_name.str);
-    pubmsg->payload.publish.payload.str =
+        strlen((char *) pubmsg->var_header.publish.topic_name.buf);
+    pubmsg->payload.publish.payload.buf =
         (uint8_t *) "{\"broker\" : \"/nanomq\",\"sdk\" : \"mqtt-codec\"}";
     pubmsg->payload.publish.payload.length =
-        strlen((char *) pubmsg->payload.publish.payload.str);
+        strlen((char *) pubmsg->payload.publish.payload.buf);
 
     ret = mqtt_msg_encode(pubmsg);
     if (ret == 0) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(pubmsg, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("Problem on building pubmsg example : %d\n", ret);
     }
@@ -398,9 +445,9 @@ void encode_test(void)
     pubrel->var_header.pubrel.packet_id = 1;
     ret                                 = mqtt_msg_encode(pubrel);
     if (ret == 0) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(pubrel, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("Problem on building pubrel example : %d\n", ret);
     }
@@ -411,9 +458,9 @@ void encode_test(void)
     puback->var_header.puback.packet_id = 2;
     ret                                 = mqtt_msg_encode(puback);
     if (ret == 0) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(puback, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("Problem on building puback example : %d\n", ret);
     }
@@ -423,9 +470,9 @@ void encode_test(void)
     pubrec->var_header.pubrec.packet_id = 3;
     ret                                 = mqtt_msg_encode(pubrec);
     if (ret == 0) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(pubrec, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("Problem on building pubrec example : %d\n", ret);
     }
@@ -436,9 +483,9 @@ void encode_test(void)
     pubcomp->var_header.pubcomp.packet_id = 3;
     ret                                   = mqtt_msg_encode(pubcomp);
     if (ret == 0) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(pubcomp, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("Problem on building pubcomp example : %d\n", ret);
     }
@@ -448,17 +495,17 @@ void encode_test(void)
     mqtt_msg *submsg = mqtt_msg_create(MQTT_SUBSCRIBE);
 
     mqtt_topic topic_arr[3];
-    topic_arr[0].topic_filter.str = (uint8_t *) "sub/mqtt/1";
+    topic_arr[0].topic_filter.buf = (uint8_t *) "sub/mqtt/1";
     topic_arr[0].topic_filter.length =
-        strlen((const char *) topic_arr[0].topic_filter.str);
+        strlen((const char *) topic_arr[0].topic_filter.buf);
     topic_arr[0].qos              = 2;
-    topic_arr[1].topic_filter.str = (uint8_t *) "sub/mqtt/2";
+    topic_arr[1].topic_filter.buf = (uint8_t *) "sub/mqtt/2";
     topic_arr[1].topic_filter.length =
-        strlen((const char *) topic_arr[1].topic_filter.str);
+        strlen((const char *) topic_arr[1].topic_filter.buf);
     topic_arr[1].qos              = 0;
-    topic_arr[2].topic_filter.str = (uint8_t *) "sub/mqtt/3";
+    topic_arr[2].topic_filter.buf = (uint8_t *) "sub/mqtt/3";
     topic_arr[2].topic_filter.length =
-        strlen((const char *) topic_arr[2].topic_filter.str);
+        strlen((const char *) topic_arr[2].topic_filter.buf);
     topic_arr[2].qos                    = 1;
     submsg->payload.subscribe.topic_arr = &topic_arr[0];
 
@@ -467,9 +514,9 @@ void encode_test(void)
 
     ret = mqtt_msg_encode(submsg);
     if (ret == 0) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(submsg, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("Problem on building subscribe example : %d\n", ret);
     }
@@ -487,9 +534,9 @@ void encode_test(void)
     suback->var_header.suback.packet_id    = 45;
     ret                                    = mqtt_msg_encode(suback);
     if (ret == 0) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(suback, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("Problem on building suback example : %d\n", ret);
     }
@@ -501,19 +548,19 @@ void encode_test(void)
     mqtt_msg *unsubscribe = mqtt_msg_create(MQTT_UNSUBSCRIBE);
     unsubscribe->var_header.unsubscribe.packet_id = 46;
 
-    mqtt_str_t untopics[2];
-    untopics[0].str    = (uint8_t *) "sub/topic/1";
-    untopics[0].length = strlen((char *) untopics[0].str);
-    untopics[1].str    = (uint8_t *) "sub/topic/3";
-    untopics[1].length = strlen((char *) untopics[1].str);
+    mqtt_buf_t untopics[2];
+    untopics[0].buf    = (uint8_t *) "sub/topic/1";
+    untopics[0].length = strlen((char *) untopics[0].buf);
+    untopics[1].buf    = (uint8_t *) "sub/topic/3";
+    untopics[1].length = strlen((char *) untopics[1].buf);
     unsubscribe->payload.unsubscribe.topic_arr = &untopics[0];
 
     unsubscribe->payload.unsubscribe.topic_count = 2;
     ret                                          = mqtt_msg_encode(unsubscribe);
     if (ret == 0) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(unsubscribe, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("Problem on building unsubscribe example : %d\n", ret);
     }
@@ -524,9 +571,9 @@ void encode_test(void)
     unsuback->var_header.unsuback.packet_id = 46;
     ret                                     = mqtt_msg_encode(unsuback);
     if (ret == 0) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(unsuback, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("Problem on building unsuback example : %d\n", ret);
     }
@@ -536,9 +583,9 @@ void encode_test(void)
     mqtt_msg *pingreq = mqtt_msg_create(MQTT_PINGREQ);
     ret               = mqtt_msg_encode(pingreq);
     if (ret == 0) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(pingreq, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("Problem on building pingreq example : %d\n", ret);
     }
@@ -548,9 +595,9 @@ void encode_test(void)
     mqtt_msg *pingresp = mqtt_msg_create(MQTT_PINGRESP);
     ret                = mqtt_msg_encode(pingresp);
     if (ret == 0) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(pingresp, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("Problem on building pingresp example : %d\n", ret);
     }
@@ -560,9 +607,9 @@ void encode_test(void)
     mqtt_msg *disconn = mqtt_msg_create(MQTT_DISCONNECT);
     ret               = mqtt_msg_encode(disconn);
     if (ret == 0) {
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(disconn, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("Problem on building disconnect example : %d\n", ret);
     }
@@ -573,8 +620,8 @@ void test_for_mqtt_codec_encode(void)
 {
     int        ret = 0;
     uint8_t    buffer[BUFFSIZE];
-    mqtt_str_t buff;
-    buff.str    = &buffer[0];
+    mqtt_buf_t buff;
+    buff.buf    = &buffer[0];
     buff.length = BUFFSIZE;
 
     char *topic_name = strdup("/nanomq/mqtt/msg");
@@ -586,9 +633,9 @@ void test_for_mqtt_codec_encode(void)
     pubmsg->fixed_header.publish.qos          = 0;
     pubmsg->fixed_header.publish.retain       = 0;
     pubmsg->var_header.publish.packet_id      = 876;
-    pubmsg->var_header.publish.topic_name.str = (uint8_t *) topic_name;
+    pubmsg->var_header.publish.topic_name.buf = (uint8_t *) topic_name;
     pubmsg->var_header.publish.topic_name.length = strlen(topic_name);
-    pubmsg->payload.publish.payload.str          = (uint8_t *) payload;
+    pubmsg->payload.publish.payload.buf          = (uint8_t *) payload;
     pubmsg->payload.publish.payload.length       = strlen(payload);
 
     ret = mqtt_msg_encode(pubmsg);
@@ -599,9 +646,9 @@ void test_for_mqtt_codec_encode(void)
         topic_name = NULL;
         free(payload);
         payload = NULL;
-        memset(buff.str, 0, buff.length);
+        memset(buff.buf, 0, buff.length);
         mqtt_msg_dump(pubmsg, &buff, 1);
-        printf("%s", buff.str);
+        printf("%s", buff.buf);
     } else {
         printf("Problem on building pubmsg example : %d\n", ret);
     }
@@ -610,11 +657,12 @@ void test_for_mqtt_codec_encode(void)
 
 int main(int argc, char *argv[])
 {
-    decode_test();
+    // decode_test();
 
-    encode_test();
+    // encode_test();
 
     // test_for_mqtt_codec_encode();
+    dup_test();
 
     return 0;
 }

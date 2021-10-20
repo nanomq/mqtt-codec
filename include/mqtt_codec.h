@@ -11,6 +11,7 @@ extern "C" {
 
 extern mqtt_msg *mqtt_msg_create(mqtt_packet_type packet_type);
 extern int       mqtt_msg_destroy(mqtt_msg *self);
+extern int       mqtt_msg_dup(mqtt_msg **dest, const mqtt_msg *src);
 
 extern int mqtt_msg_encode(mqtt_msg *msg);
 
@@ -37,7 +38,7 @@ extern const char *get_packet_type_str(mqtt_packet_type packtype);
 extern int mqtt_msg_read_variable_int(uint8_t *ptr, uint32_t length,
                                       uint32_t *value, uint8_t *pos);
 
-extern int mqtt_msg_dump(mqtt_msg *msg, mqtt_str_t *buf, bool print_bytes);
+extern int mqtt_msg_dump(mqtt_msg *msg, mqtt_buf_t *buf, bool print_bytes);
 
 #ifdef __cplusplus
 }
