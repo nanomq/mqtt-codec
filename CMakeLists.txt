@@ -8,6 +8,16 @@ option(DEBUG "This is a default option for DEBUG" OFF)
 option(EXAMPLE "This is a
 default option for EXAMPLE" OFF)
 
+nng_sources(
+    mqtt.c
+    mqtt_codec.c
+    mqtt_basic.c
+
+    mqtt.h
+    mqtt_codec.h
+    mqtt_basic.h
+)
+
 if(DEBUG)
   set(CMAKE_BUILD_TYPE "Debug")
   if(APPLE)
