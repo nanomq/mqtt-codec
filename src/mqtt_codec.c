@@ -1,6 +1,6 @@
 
-#include "mqtt_codec.h"
-#include "mqtt_basic.h"
+#include "../include/mqtt_codec.h"
+#include "../include/mqtt_basic.h"
 
 #include <stdio.h>
 #include <stdlib.h>

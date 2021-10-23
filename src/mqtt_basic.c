@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "mqtt_basic.h"
+#include "../include/mqtt_basic.h"
 
 int byte_number_for_variable_length(uint32_t variable)
 {
@@ -186,4 +186,3 @@ void mqtt_buf_free(mqtt_buf_t *buf)
 {
     free(buf->buf);
 }
-

@@ -19,20 +19,20 @@ extern int nni_mqtt_msg_encode(nni_msg *);
 extern int nni_mqtt_msg_decode(nni_msg *);
 
 // mqtt packet_type
-extern int nni_mqtt_msg_set_packet_type(
-    nni_msg *, nni_mqtt_packet_type packet_type);
+extern int                  nni_mqtt_msg_set_packet_type(nni_msg *,
+                                                         nni_mqtt_packet_type packet_type);
 extern nni_mqtt_packet_type nni_mqtt_msg_get_packet_type(nni_msg *);
 
 // mqtt connect
-extern void     nni_mqtt_msg_set_connect_proto_version(nni_msg *, uint8_t);
-extern void     nni_mqtt_msg_set_connect_keep_alive(nni_msg *, uint16_t);
-extern void     nni_mqtt_msg_set_connect_client_id(nni_msg *, const char *);
-extern void     nni_mqtt_msg_set_connect_will_topic(nni_msg *, const char *);
-extern void     nni_mqtt_msg_set_connect_will_msg(nni_msg *, const char *);
-extern void     nni_mqtt_msg_set_connect_user_name(nni_msg *, const char *);
-extern void     nni_mqtt_msg_set_connect_password(nni_msg *, const char *);
-extern uint8_t  nni_mqtt_msg_get_connect_proto_version(nni_msg *);
-extern uint16_t nni_mqtt_msg_get_connect_keep_alive(nni_msg *);
+extern void        nni_mqtt_msg_set_connect_proto_version(nni_msg *, uint8_t);
+extern void        nni_mqtt_msg_set_connect_keep_alive(nni_msg *, uint16_t);
+extern void        nni_mqtt_msg_set_connect_client_id(nni_msg *, const char *);
+extern void        nni_mqtt_msg_set_connect_will_topic(nni_msg *, const char *);
+extern void        nni_mqtt_msg_set_connect_will_msg(nni_msg *, const char *);
+extern void        nni_mqtt_msg_set_connect_user_name(nni_msg *, const char *);
+extern void        nni_mqtt_msg_set_connect_password(nni_msg *, const char *);
+extern uint8_t     nni_mqtt_msg_get_connect_proto_version(nni_msg *);
+extern uint16_t    nni_mqtt_msg_get_connect_keep_alive(nni_msg *);
 extern const char *nni_mqtt_msg_get_connect_client_id(nni_msg *);
 extern const char *nni_mqtt_msg_get_connect_will_topic(nni_msg *);
 extern const char *nni_mqtt_msg_get_connect_will_msg(nni_msg *);
@@ -76,25 +76,24 @@ extern void     nni_mqtt_msg_set_pubcomp_packet_id(nni_msg *, uint16_t);
 // mqtt subscribe
 extern uint16_t nni_mqtt_msg_get_subscribe_packet_id(nni_msg *);
 extern void     nni_mqtt_msg_set_subscribe_packet_id(nni_msg *, uint16_t);
-extern void     nni_mqtt_msg_set_subscribe_topics(
-        nni_msg *, nni_mqtt_topic *, uint32_t);
-extern nni_mqtt_topic *nni_mqtt_msg_get_subscribe_topics(
-    nni_msg *, uint32_t *);
+extern void     nni_mqtt_msg_set_subscribe_topics(nni_msg *, nni_mqtt_topic *,
+                                                  uint32_t);
+extern nni_mqtt_topic *nni_mqtt_msg_get_subscribe_topics(nni_msg *, uint32_t *);
 
 // mqtt suback
 extern uint16_t nni_mqtt_msg_get_suback_packet_id(nni_msg *);
 extern void     nni_mqtt_msg_set_suback_packet_id(nni_msg *, uint16_t);
-extern void     nni_mqtt_msg_set_suback_return_codes(
-        nni_msg *, uint8_t *, uint32_t);
+extern void     nni_mqtt_msg_set_suback_return_codes(nni_msg *, uint8_t *,
+                                                     uint32_t);
 extern uint8_t *nni_mqtt_msg_get_suback_return_codes(nni_msg *, uint32_t *);
 
 // mqtt unsubscribe
 extern uint16_t nni_mqtt_msg_get_unsubscribe_packet_id(nni_msg *);
 extern void     nni_mqtt_msg_set_unsubscribe_packet_id(nni_msg *, uint16_t);
-extern void     nni_mqtt_msg_set_unsubscribe_topics(
-        nni_msg *, nni_mqtt_buffer *, uint32_t);
-extern nni_mqtt_buffer *nni_mqtt_msg_get_unsubscribe_topics(
-    nni_msg *, uint32_t *);
+extern void nni_mqtt_msg_set_unsubscribe_topics(nni_msg *, nni_mqtt_buffer *,
+                                                uint32_t);
+extern nni_mqtt_buffer *nni_mqtt_msg_get_unsubscribe_topics(nni_msg *,
+                                                            uint32_t *);
 
 // mqtt unsuback
 extern void     nni_mqtt_msg_set_unsuback_packet_id(nni_msg *, uint16_t);
