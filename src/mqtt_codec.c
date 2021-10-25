@@ -92,7 +92,7 @@ int read_byte(struct pos_buf *buf, uint8_t *val)
 
 int read_uint16(struct pos_buf *buf, uint16_t *val)
 {
-    if ((size_t) (buf->endpos - buf->curpos) < sizeof(uint16_t)) {
+    if ((size_t)(buf->endpos - buf->curpos) < sizeof(uint16_t)) {
         return MQTT_ERR_INVAL;
     }
 
@@ -1821,7 +1821,7 @@ const char *get_packet_type_str(mqtt_packet_type packtype)
 int mqtt_msg_dump(mqtt_msg *msg, mqtt_buf *buf, bool print_bytes)
 {
     uint32_t pos = 0;
-    uint32_t ret = 0;
+    int      ret = 0;
 
     size_t i = 0;
 
@@ -2077,7 +2077,7 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_buf *buf, bool print_bytes)
             //     buf->buf[pos++] = '\n';
             // }
             ret = sprintf((char *) &buf->buf[pos], "%02x ",
-                          ((uint8_t) (msg->entire_raw_msg.buf[i] & 0xff)));
+                          ((uint8_t)(msg->entire_raw_msg.buf[i] & 0xff)));
             if ((ret < 0) || ((pos + ret) > buf->length)) {
                 return 1;
             }
