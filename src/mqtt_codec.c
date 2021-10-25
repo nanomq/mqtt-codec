@@ -64,7 +64,7 @@ int write_uint16(uint16_t value, struct pos_buf *buf)
     return 0;
 }
 
-int write_byte_string(mqtt_buf_t *str, struct pos_buf *buf)
+int write_byte_string(mqtt_buf *str, struct pos_buf *buf)
 {
     if ((buf->endpos - buf->curpos) < (str->length + 2)) {
         return MQTT_ERR_NOMEM;
@@ -102,7 +102,7 @@ int read_uint16(struct pos_buf *buf, uint16_t *val)
     return 0;
 }
 
-int read_utf8_str(struct pos_buf *buf, mqtt_buf_t *val)
+int read_utf8_str(struct pos_buf *buf, mqtt_buf *val)
 {
     uint16_t length = 0;
     int      ret    = read_uint16(buf, &length);
@@ -124,7 +124,7 @@ int read_utf8_str(struct pos_buf *buf, mqtt_buf_t *val)
     return 0;
 }
 
-int read_str_data(struct pos_buf *buf, mqtt_buf_t *val)
+int read_str_data(struct pos_buf *buf, mqtt_buf *val)
 {
     uint16_t length = 0;
     int      ret    = read_uint16(buf, &length);
@@ -173,9 +173,9 @@ int read_packet_length(struct pos_buf *buf, uint32_t *length)
     return 0;
 }
 
-mqtt_buf_t mqtt_buf_dup(const mqtt_buf_t *src)
+mqtt_buf mqtt_buf_dup(const mqtt_buf *src)
 {
-    mqtt_buf_t dest;
+    mqtt_buf dest;
 
     dest.length = src->length;
     dest.buf    = malloc(dest.length);
@@ -183,7 +183,7 @@ mqtt_buf_t mqtt_buf_dup(const mqtt_buf_t *src)
     return dest;
 }
 
-void mqtt_buf_free(mqtt_buf_t *buf)
+void mqtt_buf_free(mqtt_buf *buf)
 {
     free(buf->buf);
 }
@@ -206,7 +206,7 @@ mqtt_msg *mqtt_msg_create(mqtt_packet_type packet_type)
 
 int mqtt_msg_dup(mqtt_msg **dest, const mqtt_msg *src)
 {
-    mqtt_buf_t buf_dup = mqtt_buf_dup(&src->entire_raw_msg);
+    mqtt_buf buf_dup = mqtt_buf_dup(&src->entire_raw_msg);
 
     uint32_t result;
 
@@ -512,8 +512,8 @@ int encode_subscribe_msg(mqtt_msg *msg)
 
     /* Go through topic filters to calculate length information */
     for (size_t i = 0; i < spld->topic_count; i++) {
-        mqtt_topic *topic = &spld->topic_arr[i];
-        poslength += topic->topic_filter.length;
+        mqtt_topic_qos *topic = &spld->topic_arr[i];
+        poslength += topic->topic.length;
         poslength += 1; // for 'options' byte
         poslength += 2; // for 'length' field of Topic Filter, which is encoded
                         // as UTF-8 encoded strings */
@@ -546,8 +546,8 @@ int encode_subscribe_msg(mqtt_msg *msg)
 
     /* Subscribe topic_arr */
     for (size_t i = 0; i < spld->topic_count; i++) {
-        mqtt_topic *topic = &spld->topic_arr[i];
-        write_byte_string(&topic->topic_filter, &buf);
+        mqtt_topic_qos *topic = &spld->topic_arr[i];
+        write_byte_string(&topic->topic, &buf);
         write_byte(topic->qos, &buf);
     }
 
@@ -792,7 +792,7 @@ int encode_unsubscribe_msg(mqtt_msg *msg)
 
     /* Go through topic filters to calculate length information */
     for (size_t i = 0; i < uspld->topic_count; i++) {
-        mqtt_buf_t *topic = &uspld->topic_arr[i];
+        mqtt_buf *topic = &uspld->topic_arr[i];
         poslength += topic->length;
         poslength += 2; // for 'length' field of Topic Filter, which is encoded
                         // as UTF-8 encoded strings */
@@ -825,7 +825,7 @@ int encode_unsubscribe_msg(mqtt_msg *msg)
 
     /* Subscribe topic_arr */
     for (size_t i = 0; i < uspld->topic_count; i++) {
-        mqtt_buf_t *topic = &uspld->topic_arr[i];
+        mqtt_buf *topic = &uspld->topic_arr[i];
         write_byte_string(topic, &buf);
     }
 
@@ -1275,13 +1275,13 @@ mqtt_msg *decode_raw_packet_subscribe_msg(uint8_t *packet, uint32_t length,
         topic_count++;
     }
     /* Allocate topic array */
-    spld->topic_arr = (mqtt_topic *) malloc(topic_count * sizeof(mqtt_topic));
+    spld->topic_arr =
+        (mqtt_topic_qos *) malloc(topic_count * sizeof(mqtt_topic_qos));
     /* Set back current position */
     buf.curpos = saved_current_pos;
     while (buf.curpos < buf.endpos) {
         /* Topic Name */
-        ret = read_utf8_str(&buf,
-                            &spld->topic_arr[spld->topic_count].topic_filter);
+        ret = read_utf8_str(&buf, &spld->topic_arr[spld->topic_count].topic);
         if (ret != 0) {
             *parse_error = MQTT_ERR_PROTOCOL;
             goto ERROR;
@@ -1621,7 +1621,7 @@ mqtt_msg *decode_raw_packet_unsubscribe_msg(uint8_t *packet, uint32_t length,
     }
 
     /* Allocate topic array */
-    uspld->topic_arr = (mqtt_buf_t *) malloc(topic_count * sizeof(mqtt_buf_t));
+    uspld->topic_arr = (mqtt_buf *) malloc(topic_count * sizeof(mqtt_buf));
 
     /* Set back current position */
     buf.curpos = saved_current_pos;
@@ -1818,7 +1818,7 @@ const char *get_packet_type_str(mqtt_packet_type packtype)
     return packTypeNames[packtype];
 }
 
-int mqtt_msg_dump(mqtt_msg *msg, mqtt_buf_t *buf, bool print_bytes)
+int mqtt_msg_dump(mqtt_msg *msg, mqtt_buf *buf, bool print_bytes)
 {
     uint32_t pos = 0;
     uint32_t ret = 0;
@@ -1997,13 +1997,12 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_buf_t *buf, bool print_bytes)
         }
         pos += ret;
         for (uint32_t i = 0; i < msg->payload.subscribe.topic_count; i++) {
-            ret = sprintf(
-                (char *) &buf->buf[pos],
-                "Topic Filter[%u]    :   %.*s\n"
-                "Requested QoS[%u]   :   %d\n",
-                i, msg->payload.subscribe.topic_arr[i].topic_filter.length,
-                msg->payload.subscribe.topic_arr[i].topic_filter.buf, i,
-                (int) msg->payload.subscribe.topic_arr[i].qos);
+            ret = sprintf((char *) &buf->buf[pos],
+                          "Topic Filter[%u]    :   %.*s\n"
+                          "Requested QoS[%u]   :   %d\n",
+                          i, msg->payload.subscribe.topic_arr[i].topic.length,
+                          msg->payload.subscribe.topic_arr[i].topic.buf, i,
+                          (int) msg->payload.subscribe.topic_arr[i].qos);
             if ((ret < 0) || ((pos + ret) > buf->length)) {
                 return 1;
             }
