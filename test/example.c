@@ -15,9 +15,9 @@
 
 void dup_test(void)
 {
-    int        ret = 0;
-    uint8_t    buffer[BUFFSIZE];
-    mqtt_buf_t buff;
+    int      ret = 0;
+    uint8_t  buffer[BUFFSIZE];
+    mqtt_buf buff;
     buff.buf    = &buffer[0];
     buff.length = BUFFSIZE;
 
@@ -67,8 +67,8 @@ void dup_test(void)
 
 void decode_test(void)
 {
-    uint8_t    buffer[BUFFSIZE];
-    mqtt_buf_t buff;
+    uint8_t  buffer[BUFFSIZE];
+    mqtt_buf buff;
     buff.buf    = &buffer[0];
     buff.length = BUFFSIZE;
 
@@ -357,9 +357,9 @@ void decode_test(void)
 
 void encode_test(void)
 {
-    int        ret = 0;
-    uint8_t    buffer[BUFFSIZE];
-    mqtt_buf_t buff; // = {&buffer[0], (uint32_t)BUFFSIZE};
+    int      ret = 0;
+    uint8_t  buffer[BUFFSIZE];
+    mqtt_buf buff; // = {&buffer[0], (uint32_t)BUFFSIZE};
     buff.buf    = &buffer[0];
     buff.length = BUFFSIZE;
 
@@ -499,18 +499,18 @@ void encode_test(void)
     /* SUBSCRIBE */
     mqtt_msg *submsg = mqtt_msg_create(MQTT_SUBSCRIBE);
 
-    mqtt_topic topic_arr[3];
-    topic_arr[0].topic_filter.buf = (uint8_t *) "sub/mqtt/1";
-    topic_arr[0].topic_filter.length =
-        strlen((const char *) topic_arr[0].topic_filter.buf);
+    mqtt_topic_qos topic_arr[3];
+    topic_arr[0].topic.buf = (uint8_t *) "sub/mqtt/1";
+    topic_arr[0].topic.length =
+        strlen((const char *) topic_arr[0].topic.buf);
     topic_arr[0].qos              = 2;
-    topic_arr[1].topic_filter.buf = (uint8_t *) "sub/mqtt/2";
-    topic_arr[1].topic_filter.length =
-        strlen((const char *) topic_arr[1].topic_filter.buf);
+    topic_arr[1].topic.buf = (uint8_t *) "sub/mqtt/2";
+    topic_arr[1].topic.length =
+        strlen((const char *) topic_arr[1].topic.buf);
     topic_arr[1].qos              = 0;
-    topic_arr[2].topic_filter.buf = (uint8_t *) "sub/mqtt/3";
-    topic_arr[2].topic_filter.length =
-        strlen((const char *) topic_arr[2].topic_filter.buf);
+    topic_arr[2].topic.buf = (uint8_t *) "sub/mqtt/3";
+    topic_arr[2].topic.length =
+        strlen((const char *) topic_arr[2].topic.buf);
     topic_arr[2].qos                    = 1;
     submsg->payload.subscribe.topic_arr = &topic_arr[0];
 
@@ -553,7 +553,7 @@ void encode_test(void)
     mqtt_msg *unsubscribe = mqtt_msg_create(MQTT_UNSUBSCRIBE);
     unsubscribe->var_header.unsubscribe.packet_id = 46;
 
-    mqtt_buf_t untopics[2];
+    mqtt_buf untopics[2];
     untopics[0].buf    = (uint8_t *) "sub/topic/1";
     untopics[0].length = strlen((char *) untopics[0].buf);
     untopics[1].buf    = (uint8_t *) "sub/topic/3";
@@ -623,9 +623,9 @@ void encode_test(void)
 
 void test_for_mqtt_codec_encode(void)
 {
-    int        ret = 0;
-    uint8_t    buffer[BUFFSIZE];
-    mqtt_buf_t buff;
+    int      ret = 0;
+    uint8_t  buffer[BUFFSIZE];
+    mqtt_buf buff;
     buff.buf    = &buffer[0];
     buff.length = BUFFSIZE;
 

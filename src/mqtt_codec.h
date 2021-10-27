@@ -223,7 +223,7 @@ typedef struct {
     mqtt_packet_type packet_type : 4;
 } mqtt_pub_hdr;
 
-typedef struct {
+typedef struct mqtt_fixed_hdr_t {
     union {
         mqtt_common_hdr common;
         mqtt_pub_hdr    publish;
