@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define BUFFSIZE 1024
+#define BUFFSIZE 2048
 
 void dup_test(void)
 {
@@ -431,7 +431,15 @@ void encode_test(void)
     pubmsg->var_header.publish.topic_name.length =
         strlen((char *) pubmsg->var_header.publish.topic_name.buf);
     pubmsg->payload.publish.payload.buf =
-        (uint8_t *) "{\"broker\" : \"/nanomq\",\"sdk\" : \"mqtt-codec\"}";
+        (uint8_t
+             *) "{\"broker\" : \"/nanomq\",\"sdk\" : \"mqtt-codec\",\"data\" : "
+                "\"193788976891937987589739187893798567987189794876979847982789"
+                "47896748372979749792679834279847986798274987689273489762794767"
+                "2987AEFEFAEFDCBFEAKJSHFKJHSJKFHKJSHLKJKUIYIUETIUQWOIQO<MZN<"
+                "MBJHGHJFHGLKJHGFDSAQWERTYUIOPZXCVBNM988247592878975498279857ad"
+                "ASDFGHJFGHJFGHJGHJGHJFGHGHJGHGHJDF1937889768919379875897391878"
+                "93798567987189794876979847982789djakhkjheqiuyieuyiutyiuqyiuyiu"
+                "\"}";
     pubmsg->payload.publish.payload.length =
         strlen((char *) pubmsg->payload.publish.payload.buf);
 
@@ -500,18 +508,15 @@ void encode_test(void)
     mqtt_msg *submsg = mqtt_msg_create(MQTT_SUBSCRIBE);
 
     mqtt_topic_qos topic_arr[3];
-    topic_arr[0].topic.buf = (uint8_t *) "sub/mqtt/1";
-    topic_arr[0].topic.length =
-        strlen((const char *) topic_arr[0].topic.buf);
-    topic_arr[0].qos              = 2;
-    topic_arr[1].topic.buf = (uint8_t *) "sub/mqtt/2";
-    topic_arr[1].topic.length =
-        strlen((const char *) topic_arr[1].topic.buf);
-    topic_arr[1].qos              = 0;
-    topic_arr[2].topic.buf = (uint8_t *) "sub/mqtt/3";
-    topic_arr[2].topic.length =
-        strlen((const char *) topic_arr[2].topic.buf);
-    topic_arr[2].qos                    = 1;
+    topic_arr[0].topic.buf    = (uint8_t *) "sub/mqtt/1";
+    topic_arr[0].topic.length = strlen((const char *) topic_arr[0].topic.buf);
+    topic_arr[0].qos          = 2;
+    topic_arr[1].topic.buf    = (uint8_t *) "sub/mqtt/2";
+    topic_arr[1].topic.length = strlen((const char *) topic_arr[1].topic.buf);
+    topic_arr[1].qos          = 0;
+    topic_arr[2].topic.buf    = (uint8_t *) "sub/mqtt/3";
+    topic_arr[2].topic.length = strlen((const char *) topic_arr[2].topic.buf);
+    topic_arr[2].qos          = 1;
     submsg->payload.subscribe.topic_arr = &topic_arr[0];
 
     submsg->payload.subscribe.topic_count  = 3;

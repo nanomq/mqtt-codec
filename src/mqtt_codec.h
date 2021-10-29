@@ -234,18 +234,20 @@ typedef struct mqtt_fixed_hdr_t {
 
 typedef struct {
     /* Fixed header part */
-    mqtt_fixed_hdr fixed_header;
-
-    uint8_t used_bytes; /* byte count for used remainingLength
-                           representation This information (combined with
-                           packetType and packetFlags)  may be used to jump
-                           the point where the actual data starts */
+    mqtt_fixed_hdr             fixed_header;
     union mqtt_variable_header var_header;
     union mqtt_payload         payload;
 
-    bool     is_decoded;     /* message is obtained from decoded or encoded */
+    uint8_t used_bytes : 5; /* byte count for used remainingLength
+                             representation This information (combined with
+                             packetType and packetFlags)  may be used to jump
+                             the point where the actual data starts */
+
+    bool is_decoded : 1;   /* message is obtained from decoded or encoded */
+    bool attached_raw : 1; /* indicates if entire_raw_msg is to be owned */
+    bool _unused : 1;
+
     mqtt_buf entire_raw_msg; /* raw representation of whole packet */
-    int      attached_raw;   /* indicates if entire_raw_msg is to be owned */
 } mqtt_msg;
 
 extern int byte_number_for_variable_length(uint32_t variable);

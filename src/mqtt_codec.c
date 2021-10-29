@@ -953,9 +953,9 @@ int encode_disconnect_msg(mqtt_msg *msg)
 typedef struct {
     mqtt_packet_type packet_type;
     int (*encode)(mqtt_msg *);
-} mqtt_msg_encode_handler;
+} mqtt_msg_codec_handler;
 
-mqtt_msg_encode_handler encode_handlers[] = {
+mqtt_msg_codec_handler encode_handlers[] = {
     { MQTT_CONNECT, encode_connect_msg },
     { MQTT_CONNACK, encode_connack_msg },
     { MQTT_PUBLISH, encode_publish_msg },
@@ -979,7 +979,7 @@ int mqtt_msg_encode(mqtt_msg *msg)
     }
 
     for (size_t i = 0;
-         i < sizeof(encode_handlers) / sizeof(mqtt_msg_encode_handler); i++) {
+         i < sizeof(encode_handlers) / sizeof(mqtt_msg_codec_handler); i++) {
         if (encode_handlers[i].packet_type ==
             msg->fixed_header.common.packet_type) {
             return encode_handlers[i].encode(msg);
@@ -1827,15 +1827,15 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_buf *buf, bool print_bytes)
 
     ret =
         sprintf((char *) &buf->buf[pos],
-                "\n----- MQTT Message Dump -----\n"
+                "\n----- MQTT Message Dump  -----\n"
                 "Packet Type        :   %d (%s)\n"
                 "Packet Flags       :   |%d|%d|%d|%d|\n"
-                "Remaining Length   :   %d\n",
+                "Remaining Length   :   %d (%d bytes)\n",
                 msg->fixed_header.common.packet_type,
                 get_packet_type_str(msg->fixed_header.common.packet_type),
                 msg->fixed_header.common.bit_3, msg->fixed_header.common.bit_2,
                 msg->fixed_header.common.bit_1, msg->fixed_header.common.bit_0,
-                (int) msg->fixed_header.remaining_length);
+                (int) msg->fixed_header.remaining_length, msg->used_bytes);
     if ((ret < 0) || ((pos + ret) > buf->length)) {
         return 1;
     }
@@ -1941,7 +1941,8 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_buf *buf, bool print_bytes)
         pos += ret;
         ret = sprintf((char *) &buf->buf[pos],
                       "Topic     : %.*s\n"
-                      "Packet Id : %d\nPayload   : %.*s\n",
+                      "Packet Id : %d\n"
+                      "Payload   : %.*s\n",
                       msg->var_header.publish.topic_name.length,
                       msg->var_header.publish.topic_name.buf,
                       (int) msg->var_header.publish.packet_id,
@@ -1990,7 +1991,7 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_buf *buf, bool print_bytes)
         break;
 
     case MQTT_SUBSCRIBE: {
-        ret = sprintf((char *) &buf->buf[pos], "Packet-Id           : %d\n",
+        ret = sprintf((char *) &buf->buf[pos], "Packet-Id          : %d\n",
                       msg->var_header.subscribe.packet_id);
         if ((ret < 0) || ((pos + ret) > buf->length)) {
             return 1;
@@ -2011,7 +2012,7 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_buf *buf, bool print_bytes)
     } break;
 
     case MQTT_SUBACK: {
-        ret = sprintf((char *) &buf->buf[pos], "Packet-Id: %d\n",
+        ret = sprintf((char *) &buf->buf[pos], "Packet-Id          : %d\n",
                       msg->var_header.suback.packet_id);
         if ((ret < 0) || ((pos + ret) > buf->length)) {
             return 1;
@@ -2028,7 +2029,7 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_buf *buf, bool print_bytes)
     } break;
 
     case MQTT_UNSUBSCRIBE: {
-        ret = sprintf((char *) &buf->buf[pos], "Packet-Id: %d\n",
+        ret = sprintf((char *) &buf->buf[pos], "Packet-Id          : %d\n",
                       msg->var_header.unsubscribe.packet_id);
         if ((ret < 0) || ((pos + ret) > buf->length)) {
             return 1;
@@ -2047,7 +2048,7 @@ int mqtt_msg_dump(mqtt_msg *msg, mqtt_buf *buf, bool print_bytes)
     } break;
 
     case MQTT_UNSUBACK:
-        ret = sprintf((char *) &buf->buf[pos], "Packet-Id: %d\n",
+        ret = sprintf((char *) &buf->buf[pos], "Packet-Id          : %d\n",
                       msg->var_header.unsuback.packet_id);
         if ((ret < 0) || ((pos + ret) > buf->length)) {
             return 1;
